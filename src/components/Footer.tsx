@@ -99,37 +99,6 @@ export const Footer: React.FC = () => {
                 {OFFICIAL_CONTACTS.partnershipsEmail}
               </a>
             </div>
-
-            <div className="pt-2 space-y-2.5">
-              <p className="text-sm font-bold text-[#F2B635]">
-                {t.footer.committeeTitle}
-              </p>
-              <div className="space-y-2 text-sm text-[#ECE2CE]/85">
-                {OFFICIAL_CONTACTS.committeeMembers.map((member) => (
-                  <div
-                    key={member.phone}
-                    className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#ECE2CE]/10 pb-1.5 last:border-none"
-                  >
-                    <span>
-                      <strong className="font-bold text-[#ECE2CE]">
-                        {lang === 'ar' ? member.nameAr : member.nameEn}
-                      </strong>
-                      <span className="mx-1.5 text-[#ECE2CE]/50">·</span>
-                      <span className="text-[#ECE2CE]/75">
-                        {lang === 'ar' ? member.roleAr : member.roleEn}
-                      </span>
-                    </span>
-                    <a
-                      href={`tel:${member.phone}`}
-                      dir="ltr"
-                      className="tabular-nums text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
-                    >
-                      {member.phone}
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
