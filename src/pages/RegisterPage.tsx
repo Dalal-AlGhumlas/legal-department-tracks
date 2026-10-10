@@ -17,8 +17,9 @@ interface FormErrors {
   major?: string;
   academic_level?: string;
   university_id?: string;
-  selected_track_id?: string;
-  track_motivation?: string;
+selected_track_id?: string;
+second_track_id?: string;
+track_motivation?: string;
   has_previous_legal_training?: string;
   previous_training_details?: string;
   legal_department_knowledge_level?: string;
@@ -45,6 +46,7 @@ export const RegisterPage: React.FC = () => {
   const [selectedTrackId, setSelectedTrackId] = useState<TrackSlug | ''>(
     preselectedTrack
   );
+  const [secondTrackId, setSecondTrackId] = useState<TrackSlug | ''>('');
   const [trackMotivation, setTrackMotivation] = useState('');
   const [hasPreviousTraining, setHasPreviousTraining] = useState<
     'yes' | 'no' | ''
