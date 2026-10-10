@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --masar-cream: #ECE2CE;
+    --masar-canvas: #F6F1E6;
+    --masar-surface: #FAF7F0;
+    --masar-border: #DDD2BC;
+    --masar-deep-olive: #3C4620;
+    --masar-olive: #4B5D16;
+    --masar-yellow: #F2B635;
+    --masar-orange: #E45C10;
+  }
+
+  html[lang="ar"] {
+    font-family: 'Amiri', serif;
+    direction: rtl;
+  }
+
+  html[lang="en"] {
+    font-family: 'Inter', sans-serif;
+    direction: ltr;
+  }
+
+  body {
+    background-color: var(--masar-canvas);
+    color: var(--masar-deep-olive);
+    overflow-x: hidden;
+    margin: 0;
+  }
+
+  /* Focus accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--masar-olive);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom editorial utilities */
+.font-editorial-ar {
+  font-family: 'Amiri', serif;
+}
+
+.font-editorial-en {
+  font-family: 'Inter', sans-serif;
+}
+
+.balance-text {
+  text-wrap: balance;
+}
+
+/* Restrained micro-interactions using compositor-only properties */
+.track-card-transition {
+  transition-property: transform, opacity, box-shadow, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.track-card-transition:hover {
+  transform: translateY(-3px);
+}
+
+.track-image-zoom {
+  transition-property: transform;
+  transition-duration: 350ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .track-image-zoom {
+  transform: scale(1.03);
+}
+
+.btn-press {
+  transition-property: transform, background-color, border-color, color, opacity;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track-card-transition,
+  .track-image-zoom,
+  .btn-press {
+    transition: none !important;
+    transform: none !important;
+  }
+  .group:hover .track-image-zoom {
+    transform: none !important;
+  }
+}
