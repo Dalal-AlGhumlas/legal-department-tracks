@@ -13,7 +13,7 @@ export const TRANSLATIONS = {
       tracks: 'المسارات',
       discover: 'اكتشف مسارك',
       faq: 'الأسئلة الشائعة',
-      switchLanguage: 'الإنجليزية',
+switchLanguage: 'English',
       ctaBefore: 'التسجيل سيفتح قريبًا',
       ctaOpen: 'التسجيل',
       ctaClosed: 'دخول المشاركين',
