@@ -55,11 +55,10 @@ interface ProgramStoreContextValue {
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   updateParticipantPassword: (newPassword: string) => Promise<void>;
-  reviewApplication: (
-    registrationId: string,
-    decision: 'accepted' | 'rejected',
-    overrideTrackId?: TrackSlug
-  ) => Promise<ReviewApplicationResult>;
+reviewApplication: (
+  registrationId: string,
+  decision: 'accepted' | 'rejected'
+) => Promise<ReviewApplicationResult>;
   issueOrUploadCertificate: (
     participantId: string,
     file?: File | null
@@ -620,12 +619,11 @@ track_motivation: payload.track_motivation,
   // ---------------------------------------------------------------------------
   // 5. ADMIN ACTIONS (SUPABASE EDGE FUNCTION + LIVE DATA REFRESH)
   // ---------------------------------------------------------------------------
-  const reviewApplication = useCallback(
-    async (
-      registrationId: string,
-      decision: 'accepted' | 'rejected',
-      overrideTrackId?: TrackSlug
-    ): Promise<ReviewApplicationResult> => {
+const reviewApplication = useCallback(
+  async (
+    registrationId: string,
+    decision: 'accepted' | 'rejected'
+  ): Promise<ReviewApplicationResult> => {
       if (
         !currentUser ||
         currentUser.role !== 'admin' ||
@@ -636,12 +634,11 @@ track_motivation: payload.track_motivation,
       }
 
       const { data, error } = await supabase.functions.invoke('admin-actions', {
-        body: {
-          action: 'review_registration',
-          registrationId,
-          decision,
-          overrideTrackId
-        }
+body: {
+  action: 'review_registration',
+  registrationId,
+  decision
+}
       });
 
       if (error || data?.error) {
