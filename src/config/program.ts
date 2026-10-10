@@ -99,28 +99,39 @@ export const OFFICIAL_PROGRAM_SCHEDULE: ProgramScheduleDay[] = [
 export interface OfficialPartner {
   nameAr: string;
   nameEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  image: string;
 }
 
-/**
- * Official Law Club Success Partners explicitly listed on Page 5 of the attached official deck.
- */
 export const OFFICIAL_PARTNERS: OfficialPartner[] = [
-  { nameAr: 'الهيئة السعودية للمحامين', nameEn: 'Saudi Bar Association' },
-  { nameAr: 'هيئة حقوق الإنسان', nameEn: 'Human Rights Commission' },
-  { nameAr: 'صندوق التنمية الصناعية السعودي', nameEn: 'Saudi Industrial Development Fund (SIDF)' },
-  { nameAr: 'الهيئة الملكية لمحافظة العلا', nameEn: 'Royal Commission for AlUla' },
-  { nameAr: 'مؤسسة محمد بن سلمان (مسك)', nameEn: 'Misk Foundation' },
-  { nameAr: 'المركز الوطني للعمليات الأمنية 911', nameEn: 'National Center for Security Operations 911' },
-  { nameAr: 'كيركلاند آند إيليس', nameEn: 'Kirkland & Ellis LLP' },
-  { nameAr: 'خشيم ومشاركوه', nameEn: 'K&A (Khoshaim & Associates)' },
-  { nameAr: 'إيه إس آند إتش كليفورد تشانس', nameEn: 'AS&H Clifford Chance' },
-  { nameAr: 'شورى للمحاماة والاستشارات', nameEn: 'Shura Law Firm' },
-  { nameAr: 'الخريف محامون ومستشارون', nameEn: 'Alkhorayef Law Firm' },
-  { nameAr: 'الرفاعي وشركاؤه للمحاماة', nameEn: 'Al-Refaei & Co.' },
-  { nameAr: 'الرويشد والرزين مستشارون ومحامون', nameEn: 'Alrowaished & Alrazeen Law Firm' },
-  { nameAr: 'المدينة للمحاماة', nameEn: 'The City Law Firm' },
-  { nameAr: 'شركة الشريف وشركاه محامون ومستشارون', nameEn: 'Alshareef & Partners' },
-  { nameAr: 'ميتروبوليس للتدريب القانوني', nameEn: 'Metropolis Legal Training' }
+  {
+    nameAr: 'الشركة السعودية لتقنية المعلومات (SITE)',
+    nameEn: 'Saudi Information Technology Company (SITE)',
+    descriptionAr:
+      'تقدم حلولًا رقمية وسيبرانية مبتكرة وموثوقة، وتطور تقنيات المستقبل لمواكبة التطلعات ومواجهة التحديات، مع تمكين الكفاءات الوطنية وتعزيز ريادة الأعمال لبناء مستقبل رقمي مستدام.',
+    descriptionEn:
+      'Provides innovative and trusted digital and cybersecurity solutions, develops future technologies to meet evolving ambitions and challenges, and empowers national talent and entrepreneurship to build a sustainable digital future.',
+    image: '/images/partners/site.png'
+  },
+  {
+    nameAr: 'OSOOL | أصول العقارية',
+    nameEn: 'OSOOL Real Estate',
+    descriptionAr:
+      'شركة متخصصة في الاستثمار وإدارة الأصول العقارية، تتبنى نهجًا استراتيجيًا في تنمية الاستثمارات وتعظيم قيمة الأصول، من خلال محفظة عقارية متنوعة وشراكات نوعية، بما يرسّخ الاستدامة الاستثمارية ويحقق قيمة مضافة وعوائد طويلة الأجل وفق أعلى المعايير المهنية.',
+    descriptionEn:
+      'A company specialized in real estate investment and asset management, following a strategic approach to growing investments and maximizing asset value through a diversified real estate portfolio and high-quality partnerships, creating sustainable long-term value and returns.',
+    image: '/images/partners/osool.png'
+  },
+  {
+    nameAr: 'شركة الخشيم محامون ومستشارون (K&A)',
+    nameEn: 'Khoshaim & Associates (K&A)',
+    descriptionAr:
+      'شركة محاماة سعودية متكاملة الخدمات، تتمتع بخبرة دولية واسعة، وتقدم خدمات قانونية متخصصة تستند إلى الكفاءة المهنية والتميز القانوني، وفق أفضل الممارسات والمعايير الدولية.',
+    descriptionEn:
+      'A full-service Saudi law firm with extensive international experience, providing specialized legal services founded on professional expertise and legal excellence in accordance with leading international practices and standards.',
+    image: '/images/partners/ka.png'
+  }
 ];
 
 export interface OfficialContactPerson {
