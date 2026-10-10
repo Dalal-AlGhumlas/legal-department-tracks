@@ -18,9 +18,10 @@ interface ValidatedRegistrationInput {
   university: string;
   major: string;
   academic_level: string;
-  university_id: string;
-  selected_track_id: string;
-  track_motivation: string;
+university_id: string;
+selected_track_id: string;
+second_track_id: string;
+track_motivation: string;
   has_previous_legal_training: boolean;
   previous_training_details: string | null;
   legal_department_knowledge_level: string;
@@ -49,6 +50,8 @@ export function validateAndNormalizeRegistration(
     typeof body.university_id === 'string' ? body.university_id.trim() : '';
   const selected_track_id =
     typeof body.selected_track_id === 'string' ? body.selected_track_id.trim() : '';
+  const second_track_id =
+  typeof body.second_track_id === 'string' ? body.second_track_id.trim() : '';
   const track_motivation =
     typeof body.track_motivation === 'string' ? body.track_motivation.trim() : '';
   const has_previous_legal_training =
@@ -86,9 +89,13 @@ export function validateAndNormalizeRegistration(
     return { ok: false, error: 'INVALID_REGISTRATION_DATA' };
   }
 
-  if (!VALID_TRACK_IDS.has(selected_track_id)) {
-    return { ok: false, error: 'INVALID_REGISTRATION_DATA' };
-  }
+if (
+  !VALID_TRACK_IDS.has(selected_track_id) ||
+  !VALID_TRACK_IDS.has(second_track_id) ||
+  selected_track_id === second_track_id
+) {
+  return { ok: false, error: 'INVALID_REGISTRATION_DATA' };
+}
 
   if (!track_motivation || track_motivation.length > MOTIVATION_MAX_LENGTH) {
     return { ok: false, error: 'INVALID_REGISTRATION_DATA' };
@@ -115,9 +122,10 @@ export function validateAndNormalizeRegistration(
       university,
       major,
       academic_level,
-      university_id,
-      selected_track_id,
-      track_motivation,
+university_id,
+selected_track_id,
+second_track_id,
+track_motivation,
       has_previous_legal_training,
       previous_training_details: has_previous_legal_training
         ? rawPrevDetails
@@ -211,9 +219,10 @@ export default async function handler(req: any, res: any) {
         university: validation.data.university,
         major: validation.data.major,
         academic_level: validation.data.academic_level,
-        university_id: validation.data.university_id,
-        selected_track_id: validation.data.selected_track_id,
-        track_motivation: validation.data.track_motivation,
+university_id: validation.data.university_id,
+selected_track_id: validation.data.selected_track_id,
+second_track_id: validation.data.second_track_id,
+track_motivation: validation.data.track_motivation,
         has_previous_legal_training: validation.data.has_previous_legal_training,
         previous_training_details: validation.data.previous_training_details,
         legal_department_knowledge_level:
