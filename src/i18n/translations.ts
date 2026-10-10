@@ -163,10 +163,13 @@ partnersSection: {
         academicLevelPlaceholder: 'اختر المستوى الدراسي',
         universityId: 'الرقم الجامعي',
         universityIdPlaceholder: 'أدخل رقمك الجامعي',
-        trackExplanation:
-          'يُقام البرنامج على مدى ثلاثة أيام متوازية في قاعات مستقلة، ويسجل المشارك في مسار واحد يختاره ويلازمه طوال أيام البرنامج.',
-        trackPrompt: 'اختر المسار التدريبي الذي تود الانضمام إليه وملازمته طوال فترة البرنامج',
-        motivationQuestion: 'ما هو سبب اختيارك لهذا المسار تحديداً؟ وما الذي تتوقع الخروج به منه؟',
+trackExplanation:
+  'يُقام البرنامج على مدى ثلاثة أيام متوازية في قاعات مستقلة، ويختار المتقدم رغبتين مرتبتين، ويتم تحديد مسار واحد للمشارك عند القبول ليلازمه طوال أيام البرنامج.',
+trackPrompt: 'رتب المسارات حسب رغبتك',
+firstPreference: 'الرغبة الأولى',
+secondPreference: 'الرغبة الثانية',
+motivationQuestion:
+  'ما هو سبب اختيارك لرغبتك الأولى تحديداً؟ وما الذي تتوقع الخروج به منها؟',
         motivationPlaceholder: 'اكتب إجابتك باختصار ووضوح...',
         motivationCharCount: '{count} / {max} حرف',
         previousTrainingQuestion:
@@ -199,7 +202,9 @@ partnersSection: {
         majorRequired: 'يرجى إدخال التخصص.',
         academicLevelRequired: 'يرجى اختيار المستوى الدراسي.',
         universityIdRequired: 'يرجى إدخال الرقم الجامعي.',
-        trackRequired: 'يرجى اختيار مسار تدريبي واحد.',
+        trackRequired: 'يرجى اختيار الرغبة الأولى.',
+secondTrackRequired: 'يرجى اختيار الرغبة الثانية.',
+tracksMustDiffer: 'يجب أن تكون الرغبة الثانية مختلفة عن الرغبة الأولى.',
         motivationRequired: 'يرجى توضيح سبب اختيارك للمسار وما تتوقع الخروج به منه.',
         motivationTooLong: 'يرجى اختصار الإجابة بحيث لا تتجاوز الحد المسموح.',
         previousTrainingRequired: 'يرجى تحديد ما إذا كان لديك تدريب أو مشاركة سابقة.',
