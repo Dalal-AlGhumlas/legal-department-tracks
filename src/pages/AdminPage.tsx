@@ -51,7 +51,6 @@ export const AdminPage: React.FC = () => {
   const [selectedReg, setSelectedReg] = useState<RegistrationRecord | null>(
     null
   );
-  const [overrideTrack, setOverrideTrack] = useState<TrackSlug | ''>('');
   const [isReviewing, setIsReviewing] = useState(false);
   const [modalError, setModalError] = useState('');
   const [generatedCreds, setGeneratedCreds] = useState<{
@@ -121,37 +120,34 @@ export const AdminPage: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleOpenApplicant = (reg: RegistrationRecord) => {
-    setSelectedReg(reg);
-    setOverrideTrack(reg.selected_track_id);
-    setGeneratedCreds(null);
-    setModalError('');
-  };
+const handleOpenApplicant = (reg: RegistrationRecord) => {
+  setSelectedReg(reg);
+  setGeneratedCreds(null);
+  setModalError('');
+};
 
   const handleReviewDecision = async (decision: 'accepted' | 'rejected') => {
     if (!selectedReg || isReviewing) return;
     setIsReviewing(true);
     setModalError('');
     try {
-      const finalTrack =
-        (overrideTrack as TrackSlug) || selectedReg.selected_track_id;
-      const result = await reviewApplication(
-        selectedReg.id,
-        decision,
-        finalTrack
-      );
+const result = await reviewApplication(
+  selectedReg.id,
+  decision
+);
 
-      setSelectedReg((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: decision,
-              selected_track_id: finalTrack,
-              participant_account_created:
-                decision === 'accepted' ? true : prev.participant_account_created
-            }
-          : null
-      );
+setSelectedReg((prev) =>
+  prev
+    ? {
+        ...prev,
+        status: decision,
+        participant_account_created:
+          decision === 'accepted'
+            ? true
+            : prev.participant_account_created
+      }
+    : null
+);
 
       if (result.generatedCredentials) {
         setGeneratedCreds(result.generatedCredentials);
@@ -370,7 +366,8 @@ export const AdminPage: React.FC = () => {
                   <tr className="border-b border-[#DDD2BC] bg-[#ECE2CE]/60 text-sm font-bold text-[#3C4620]">
                     <th className="py-3.5 px-4 text-start">{a.table.applicant}</th>
                     <th className="py-3.5 px-4 text-start">{a.table.university}</th>
-                    <th className="py-3.5 px-4 text-start">{a.table.track}</th>
+<th className="py-3.5 px-4 text-start">الرغبة الأولى</th>
+<th className="py-3.5 px-4 text-start">الرغبة الثانية</th>
                     <th className="py-3.5 px-4 text-start">{a.table.status}</th>
                     <th className="py-3.5 px-4 text-end">{a.table.actions}</th>
                   </tr>
@@ -379,7 +376,7 @@ export const AdminPage: React.FC = () => {
                   {filteredRegistrations.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="py-10 text-center text-[#3C4620]/70"
                       >
                         {a.table.noResults}
@@ -411,9 +408,15 @@ export const AdminPage: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="py-4 px-4 font-bold text-[#3C4620]">
-                          {getTrackLabel(reg.selected_track_id)}
-                        </td>
+<td className="py-4 px-4 font-bold text-[#3C4620]">
+  {getTrackLabel(reg.selected_track_id)}
+</td>
+
+<td className="py-4 px-4 font-bold text-[#3C4620]">
+  {reg.second_track_id
+    ? getTrackLabel(reg.second_track_id)
+    : '—'}
+</td>
                         <td className="py-4 px-4">
                           <span
                             className={`text-sm font-bold ${
@@ -751,30 +754,28 @@ export const AdminPage: React.FC = () => {
                   </p>
                 </div>
               </div>
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div className="p-4 rounded-md bg-[#ECE2CE]/60 border border-[#DDD2BC]">
+    <p className="text-xs text-[#3C4620]/70 mb-1">
+      الرغبة الأولى
+    </p>
+    <p className="font-bold text-[#3C4620]">
+      {getTrackLabel(selectedReg.selected_track_id)}
+    </p>
+  </div>
 
-              {/* Administrative Track Selector */}
-              <div className="space-y-1.5 pt-2">
-                <label
-                  htmlFor="modal-track-override"
-                  className="block text-sm font-bold text-[#3C4620]"
-                >
-                  {a.modal.trackOverrideLabel}
-                </label>
-                <select
-                  id="modal-track-override"
-                  value={overrideTrack}
-                  onChange={(e) =>
-                    setOverrideTrack(e.target.value as TrackSlug)
-                  }
-                  className="w-full px-3.5 py-2 rounded-md bg-[#FAF7F0] border border-[#DDD2BC] text-[#3C4620] font-bold"
-                >
-                  {TRACKS.map((tr) => (
-                    <option key={tr.slug} value={tr.slug}>
-                      {lang === 'ar' ? tr.nameAr : tr.nameEn}
-                    </option>
-                  ))}
-                </select>
-              </div>
+  <div className="p-4 rounded-md bg-[#ECE2CE]/60 border border-[#DDD2BC]">
+    <p className="text-xs text-[#3C4620]/70 mb-1">
+      الرغبة الثانية
+    </p>
+    <p className="font-bold text-[#3C4620]">
+      {selectedReg.second_track_id
+        ? getTrackLabel(selectedReg.second_track_id)
+        : '—'}
+    </p>
+  </div>
+</div>
+
             </div>
 
             {/* One-Time Generated Participant Credentials Display */}
