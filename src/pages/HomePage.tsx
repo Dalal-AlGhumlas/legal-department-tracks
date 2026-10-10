@@ -227,36 +227,62 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 5. PARTNERS / SUPPORTING ENTITIES (Refined Typographic Display — No Box Grid) */}
-      <section className="py-20 md:py-24 bg-[#FAF7F0] border-b border-[#DDD2BC]">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 space-y-10">
-          <div className="max-w-3xl space-y-3">
-            <p className="text-sm font-bold text-[#4B5D16]">
-              {t.partnersSection.kicker}
-            </p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#3C4620]">
-              {t.partnersSection.title}
-            </h2>
-            <p className="text-lg text-[#3C4620]/80 leading-relaxed">
-              {t.partnersSection.subtitle}
-            </p>
+{/* 5. PARTICIPATING ENTITIES */}
+<section className="py-20 md:py-24 bg-[#FAF7F0] border-b border-[#DDD2BC]">
+  <div className="max-w-7xl mx-auto px-5 sm:px-8 space-y-10">
+
+    <div className="max-w-3xl space-y-3">
+      <p className="text-sm font-bold text-[#4B5D16]">
+        {t.partnersSection.kicker}
+      </p>
+
+      <h2 className="text-3xl sm:text-4xl font-bold text-[#3C4620]">
+        {t.partnersSection.title}
+      </h2>
+
+      <p className="text-lg text-[#3C4620]/80 leading-relaxed">
+        {t.partnersSection.subtitle}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      {OFFICIAL_PARTNERS.map((partner) => (
+        <article
+          key={partner.nameEn}
+          className="group overflow-hidden rounded-2xl border border-[#DDD2BC] bg-white transition-transform duration-300 hover:-translate-y-1"
+        >
+
+          <div className="h-52 flex items-center justify-center p-8 bg-white border-b border-[#DDD2BC]">
+            <img
+              src={partner.image}
+              alt={lang === 'ar' ? partner.nameAr : partner.nameEn}
+              className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              loading="lazy"
+            />
           </div>
 
-          <div className="pt-4 border-t border-[#DDD2BC] flex flex-wrap items-center gap-x-8 gap-y-5">
-            {OFFICIAL_PARTNERS.map((partner, index) => (
-              <React.Fragment key={partner.nameEn}>
-                <span className="text-lg sm:text-xl font-bold text-[#3C4620]/85 hover:text-[#3C4620] transition-colors">
-                  {lang === 'ar' ? partner.nameAr : partner.nameEn}
-                </span>
-                {index < OFFICIAL_PARTNERS.length - 1 && (
-                  <span aria-hidden="true" className="text-[#F2B635] font-bold select-none">
-                    ·
-                  </span>
-                )}
-              </React.Fragment>
-            ))}
+          <div className="p-6 space-y-4">
+
+            <h3 className="text-2xl font-bold text-[#3C4620] leading-snug">
+              {lang === 'ar' ? partner.nameAr : partner.nameEn}
+            </h3>
+
+            <p className="text-base text-[#3C4620]/80 leading-relaxed">
+              {lang === 'ar'
+                ? partner.descriptionAr
+                : partner.descriptionEn}
+            </p>
+
           </div>
-        </div>
-      </section>
+
+        </article>
+      ))}
+
+    </div>
+
+  </div>
+</section>
 
       {/* 6. FAQ ACCORDION */}
       <section id="faq" className="py-20 md:py-28 border-b border-[#DDD2BC]">
