@@ -57,12 +57,12 @@ export const TRANSLATIONS = {
       scheduleTitle: 'خط سير البرنامج',
       scheduleDates: 'من 12 أكتوبر إلى 14 أكتوبر'
     },
-    partnersSection: {
-      kicker: 'منظومة العلاقات المهنية',
-      title: 'جزء من شركاء النجاح لنادي القانون',
-      subtitle:
-        'يفخر نادي القانون بجامعة الملك سعود بسجل شراكاته المعرفية والمهنية مع نخبة من الجهات الحكومية ومكاتب المحاماة والمؤسسات الوطنية والدولية.'
-    },
+partnersSection: {
+  kicker: 'شركاء المسارات',
+  title: 'الجهات المشاركة في المسارات',
+  subtitle:
+    'تشارك في تقديم المسارات جهات متميزة في مجالاتها، بما يتيح للمشاركين الاطلاع على بيئات عمل قانونية ومهنية متنوعة.'
+},
     faqSection: {
       kicker: 'معلومات هامة',
       title: 'الأسئلة الشائعة',
@@ -402,12 +402,12 @@ export const TRANSLATIONS = {
       scheduleTitle: 'Program Schedule',
       scheduleDates: 'October 12 to October 14'
     },
-    partnersSection: {
-      kicker: 'Institutional Ecosystem',
-      title: 'Selected Success Partners of the Law Club',
-      subtitle:
-        'The Law Club at King Saud University is proud of its track record of knowledge and professional partnerships with leading government bodies, law firms, and national and international institutions.'
-    },
+partnersSection: {
+  kicker: 'Track Partners',
+  title: 'Participating Organizations',
+  subtitle:
+    'The program tracks are delivered with distinguished participating organizations, giving participants exposure to diverse professional and legal work environments.'
+},
     faqSection: {
       kicker: 'Essential Information',
       title: 'Frequently Asked Questions',
