@@ -3,7 +3,8 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useCallback
+  useCallback,
+  useRef
 } from 'react';
 import {
   RegistrationPayload,
@@ -83,6 +84,9 @@ export const ProgramStoreProvider: React.FC<{ children: React.ReactNode }> = ({
     updated_at: new Date().toISOString()
   });
 
+  const settingsRef = useRef<ProgramSettings>(settings);
+  settingsRef.current = settings;
+
   const [registrationState, setRegistrationState] =
     useState<RegistrationWindowState>(() =>
       computeRegistrationState(
@@ -127,7 +131,7 @@ export const ProgramStoreProvider: React.FC<{ children: React.ReactNode }> = ({
   // ---------------------------------------------------------------------------
   const loadProgramSettings = useCallback(async (): Promise<ProgramSettings> => {
     if (!isSupabaseConfigured || !supabase) {
-      return settings;
+      return settingsRef.current;
     }
 
     const { data, error } = await supabase
@@ -143,12 +147,13 @@ export const ProgramStoreProvider: React.FC<{ children: React.ReactNode }> = ({
         registration_close_at: data.registration_close_at,
         updated_at: data.updated_at
       };
+      settingsRef.current = nextSettings;
       setSettings(nextSettings);
       return nextSettings;
     }
 
-    return settings;
-  }, [settings]);
+    return settingsRef.current;
+  }, []);
 
   const loadAdminRegistrations = useCallback(async (): Promise<
     RegistrationRecord[]
