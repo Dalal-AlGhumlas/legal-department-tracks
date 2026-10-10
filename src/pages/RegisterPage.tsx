@@ -210,9 +210,15 @@ export const RegisterPage: React.FC = () => {
       nextErrors.university_id = v.universityIdRequired;
     }
 
-    if (!selectedTrackId) {
-      nextErrors.selected_track_id = v.trackRequired;
-    }
+if (!selectedTrackId) {
+  nextErrors.selected_track_id = v.trackRequired;
+}
+
+if (!secondTrackId) {
+  nextErrors.second_track_id = v.secondTrackRequired;
+} else if (secondTrackId === selectedTrackId) {
+  nextErrors.second_track_id = v.tracksMustDiffer;
+}
 
     if (!trackMotivation.trim()) {
       nextErrors.track_motivation = v.motivationRequired;
