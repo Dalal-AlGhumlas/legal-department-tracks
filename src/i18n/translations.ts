@@ -513,10 +513,13 @@ partnersSection: {
         academicLevelPlaceholder: 'Select your academic level',
         universityId: 'University ID',
         universityIdPlaceholder: 'Enter your university ID number',
-        trackExplanation:
-          'The program is held over three parallel days in dedicated halls, and each participant registers in one chosen track to attend throughout all days of the program.',
-        trackPrompt: 'Select the training track you wish to join and attend throughout the program',
-        motivationQuestion: 'Why did you choose this specific track, and what do you expect to gain from it?',
+trackExplanation:
+  'The program runs across three parallel days in dedicated halls. Applicants select two ranked track preferences, and one final track will be assigned upon acceptance for the participant to attend throughout the program.',
+trackPrompt: 'Rank the tracks according to your preference',
+firstPreference: 'First Preference',
+secondPreference: 'Second Preference',
+motivationQuestion:
+  'Why did you choose your first preference, and what do you expect to gain from it?',
         motivationPlaceholder: 'Write a concise and clear response...',
         motivationCharCount: '{count} / {max} characters',
         previousTrainingQuestion:
@@ -549,7 +552,9 @@ partnersSection: {
         majorRequired: 'Please enter your major.',
         academicLevelRequired: 'Please select your academic level.',
         universityIdRequired: 'Please enter your university ID.',
-        trackRequired: 'Please select one training track.',
+trackRequired: 'Please select your first preference.',
+secondTrackRequired: 'Please select your second preference.',
+tracksMustDiffer: 'Your second preference must be different from your first preference.',
         motivationRequired: 'Please explain why you selected this track and what you expect to gain.',
         motivationTooLong: 'Please keep your response within the maximum character limit.',
         previousTrainingRequired: 'Please indicate whether you have previous legal training.',
