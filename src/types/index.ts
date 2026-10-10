@@ -52,12 +52,8 @@ export interface RegistrationPayload {
   academic_level: string;
   university_id: string;
   selected_track_id: TrackSlug;
-  track_motivation: string;
-  has_previous_legal_training: boolean;
-  previous_training_details: string | null;
-  legal_department_knowledge_level: KnowledgeLevel;
-  attendance_commitment_confirmed: boolean;
-}
+  second_track_id: TrackSlug;
+  track_motivation: string; }
 
 export interface RegistrationRecord extends RegistrationPayload {
   id: string;
