@@ -12,12 +12,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-const VALID_TRACK_SLUGS = new Set([
-  'litigation',
-  'contracts',
-  'legislation',
-  'governance-compliance'
-]);
 
 function generateSecureTempPassword(length = 12): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
@@ -89,17 +83,10 @@ Deno.serve(async (req: Request) => {
     const { action } = body;
 
     if (action === 'review_registration') {
-      const { registrationId, decision, overrideTrackId } = body;
+const { registrationId, decision } = body;
       if (!registrationId || !['accepted', 'rejected'].includes(decision)) {
         return new Response(
           JSON.stringify({ error: 'INVALID_PARAMETERS' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (overrideTrackId && !VALID_TRACK_SLUGS.has(overrideTrackId)) {
-        return new Response(
-          JSON.stringify({ error: 'INVALID_TRACK' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -118,7 +105,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const finalTrackId = overrideTrackId || reg.selected_track_id;
+const finalTrackId = reg.selected_track_id;
       const normalizedEmail = String(reg.email).trim().toLowerCase();
       const nowIso = new Date().toISOString();
 
