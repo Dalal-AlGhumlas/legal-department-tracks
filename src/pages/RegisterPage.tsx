@@ -268,8 +268,9 @@ if (!secondTrackId) {
         major: major.trim(),
         academic_level: academicLevel,
         university_id: universityId.trim(),
-        selected_track_id: selectedTrackId as TrackSlug,
-        track_motivation: trackMotivation.trim(),
+selected_track_id: selectedTrackId as TrackSlug,
+second_track_id: secondTrackId as TrackSlug,
+track_motivation: trackMotivation.trim(),
         has_previous_legal_training: hasPreviousTraining === 'yes',
         previous_training_details:
           hasPreviousTraining === 'yes' ? previousTrainingDetails.trim() : null,
