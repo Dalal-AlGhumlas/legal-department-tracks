@@ -493,9 +493,10 @@ export const ProgramStoreProvider: React.FC<{ children: React.ReactNode }> = ({
           university: payload.university,
           major: payload.major,
           academic_level: payload.academic_level,
-          university_id: payload.university_id,
-          selected_track_id: payload.selected_track_id,
-          track_motivation: payload.track_motivation,
+university_id: payload.university_id,
+selected_track_id: payload.selected_track_id,
+second_track_id: payload.second_track_id,
+track_motivation: payload.track_motivation,
           has_previous_legal_training: payload.has_previous_legal_training,
           previous_training_details: payload.previous_training_details,
           legal_department_knowledge_level:
