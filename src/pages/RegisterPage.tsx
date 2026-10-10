@@ -521,85 +521,172 @@ track_motivation: trackMotivation.trim(),
             </div>
           </section>
 
-          {/* 02. TRACK SELECTION */}
-          <section className="space-y-6">
-            <div className="flex items-baseline gap-3 border-b border-[#DDD2BC] pb-3">
-              <span className="text-sm font-bold text-[#E45C10] tabular-nums">
-                {t.registerPage.sec02Num}
-              </span>
-              <h2 className="text-2xl font-bold text-[#3C4620]">
-                {t.registerPage.sec02Title}
-              </h2>
-            </div>
+{/* 02. TRACK SELECTION */}
+<section className="space-y-8">
+  <div className="flex items-baseline gap-3 border-b border-[#DDD2BC] pb-3">
+    <span className="text-sm font-bold text-[#E45C10] tabular-nums">
+      {t.registerPage.sec02Num}
+    </span>
 
-            {/* Required Explanatory Note */}
-            <p className="text-base text-[#3C4620]/85 leading-relaxed bg-[#ECE2CE]/60 p-4 rounded-md border border-[#DDD2BC]">
-              {f.trackExplanation}
-            </p>
+    <h2 className="text-2xl font-bold text-[#3C4620]">
+      {t.registerPage.sec02Title}
+    </h2>
+  </div>
 
-            <div className="space-y-3">
-              <p className="text-lg font-bold text-[#3C4620]">
-                {f.trackPrompt}
-              </p>
+  <p className="text-base text-[#3C4620]/85 leading-relaxed bg-[#ECE2CE]/60 p-4 rounded-md border border-[#DDD2BC]">
+    {f.trackExplanation}
+  </p>
 
-              <div
-                role="radiogroup"
-                aria-label={f.trackPrompt}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-              >
-                {TRACKS.map((track) => {
-                  const isSelected = selectedTrackId === track.slug;
-                  const trackName =
-                    lang === 'ar' ? track.nameAr : track.nameEn;
-                  const trackDesc =
-                    lang === 'ar' ? track.descriptionAr : track.descriptionEn;
+  {/* FIRST PREFERENCE */}
+  <div className="space-y-4">
+    <p className="text-xl font-bold text-[#3C4620]">
+      {f.firstPreference}
+    </p>
 
-                  return (
-                    <button
-                      key={track.slug}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      onClick={() => setSelectedTrackId(track.slug)}
-                      className={`p-5 rounded-lg border text-start transition-colors cursor-pointer flex flex-col justify-between gap-3 ${
-                        isSelected
-                          ? 'bg-[#ECE2CE] border-[#3C4620] text-[#3C4620]'
-                          : 'bg-[#FAF7F0] border-[#DDD2BC] hover:border-[#4B5D16]/60 text-[#3C4620]'
-                      }`}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xl font-bold text-[#3C4620]">
-                            {trackName}
-                          </span>
-                          <span
-                            className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                              isSelected
-                                ? 'border-[#3C4620] bg-[#3C4620]'
-                                : 'border-[#3C4620]/40'
-                            }`}
-                          >
-                            {isSelected && (
-                              <span className="w-2 h-2 rounded-full bg-[#ECE2CE]" />
-                            )}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#3C4620]/85 leading-relaxed">
-                          {trackDesc}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+    <div
+      role="radiogroup"
+      aria-label={f.firstPreference}
+      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+    >
+      {TRACKS.map((track) => {
+        const isSelected = selectedTrackId === track.slug;
+
+        const trackName =
+          lang === 'ar' ? track.nameAr : track.nameEn;
+
+        const trackDesc =
+          lang === 'ar' ? track.descriptionAr : track.descriptionEn;
+
+        return (
+          <button
+            key={track.slug}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            onClick={() => {
+              setSelectedTrackId(track.slug);
+
+              if (secondTrackId === track.slug) {
+                setSecondTrackId('');
+              }
+            }}
+            className={`p-5 rounded-lg border text-start transition-colors cursor-pointer flex flex-col justify-between gap-3 ${
+              isSelected
+                ? 'bg-[#ECE2CE] border-[#3C4620] text-[#3C4620]'
+                : 'bg-[#FAF7F0] border-[#DDD2BC] hover:border-[#4B5D16]/60 text-[#3C4620]'
+            }`}
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+
+                <span className="text-xl font-bold text-[#3C4620]">
+                  {trackName}
+                </span>
+
+                <span
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                    isSelected
+                      ? 'border-[#3C4620] bg-[#3C4620]'
+                      : 'border-[#3C4620]/40'
+                  }`}
+                >
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-[#ECE2CE]" />
+                  )}
+                </span>
+
               </div>
 
-              {errors.selected_track_id && (
-                <p className="text-sm font-bold text-[#E45C10]">
-                  {errors.selected_track_id}
-                </p>
-              )}
+              <p className="text-sm text-[#3C4620]/85 leading-relaxed">
+                {trackDesc}
+              </p>
             </div>
-          </section>
+          </button>
+        );
+      })}
+    </div>
+
+    {errors.selected_track_id && (
+      <p className="text-sm font-bold text-[#E45C10]">
+        {errors.selected_track_id}
+      </p>
+    )}
+  </div>
+
+  {/* SECOND PREFERENCE */}
+  <div className="space-y-4">
+    <p className="text-xl font-bold text-[#3C4620]">
+      {f.secondPreference}
+    </p>
+
+    <div
+      role="radiogroup"
+      aria-label={f.secondPreference}
+      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+    >
+      {TRACKS.map((track) => {
+        const isSelected = secondTrackId === track.slug;
+        const isDisabled = selectedTrackId === track.slug;
+
+        const trackName =
+          lang === 'ar' ? track.nameAr : track.nameEn;
+
+        const trackDesc =
+          lang === 'ar' ? track.descriptionAr : track.descriptionEn;
+
+        return (
+          <button
+            key={track.slug}
+            type="button"
+            role="radio"
+            disabled={isDisabled}
+            aria-checked={isSelected}
+            onClick={() => setSecondTrackId(track.slug)}
+            className={`p-5 rounded-lg border text-start transition-colors flex flex-col justify-between gap-3 ${
+              isDisabled
+                ? 'bg-[#FAF7F0] border-[#DDD2BC] opacity-40 cursor-not-allowed'
+                : isSelected
+                  ? 'bg-[#ECE2CE] border-[#3C4620] text-[#3C4620] cursor-pointer'
+                  : 'bg-[#FAF7F0] border-[#DDD2BC] hover:border-[#4B5D16]/60 text-[#3C4620] cursor-pointer'
+            }`}
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+
+                <span className="text-xl font-bold text-[#3C4620]">
+                  {trackName}
+                </span>
+
+                <span
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                    isSelected
+                      ? 'border-[#3C4620] bg-[#3C4620]'
+                      : 'border-[#3C4620]/40'
+                  }`}
+                >
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-[#ECE2CE]" />
+                  )}
+                </span>
+
+              </div>
+
+              <p className="text-sm text-[#3C4620]/85 leading-relaxed">
+                {trackDesc}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+
+    {errors.second_track_id && (
+      <p className="text-sm font-bold text-[#E45C10]">
+        {errors.second_track_id}
+      </p>
+    )}
+  </div>
+</section>
 
           {/* 03. MOTIVATION & EXPERIENCE */}
           <section className="space-y-8">
