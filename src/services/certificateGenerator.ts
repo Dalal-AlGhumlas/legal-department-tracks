@@ -2,10 +2,10 @@ import { ParticipantProfile } from '../types';
 import { TRACKS_BY_SLUG } from '../config/tracks';
 
 /**
- * Generates a high-resolution SVG certificate data URL in the official Masar identity
- * when an admin issues a certificate or when rendering a private signed certificate preview.
+ * Generates an official Masar SVG certificate document string
+ * so it can be converted into a Blob/File and uploaded to the private Supabase `certificates` bucket.
  */
-export function buildOfficialCertificateSvgDataUrl(
+export function buildOfficialCertificateSvgString(
   participant: ParticipantProfile,
   issuedDateIso: string
 ): string {
@@ -17,7 +17,7 @@ export function buildOfficialCertificateSvgDataUrl(
     day: 'numeric'
   });
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" direction="rtl">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" direction="rtl">
     <defs>
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;display=swap');
@@ -58,8 +58,19 @@ export function buildOfficialCertificateSvgDataUrl(
     <text x="600" y="750" text-anchor="middle" font-size="18" class="ar-title">نادي القانون — كلية الحقوق والعلوم السياسية</text>
     <text x="250" y="750" text-anchor="middle" font-size="16" class="ar-body">الرقم الجامعي: ${escapeXml(participant.university_id)}</text>
   </svg>`;
+}
 
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+/**
+ * Converts the generated SVG into a File object suitable for uploading to the private `certificates` bucket.
+ */
+export function buildOfficialCertificateFile(
+  participant: ParticipantProfile,
+  issuedDateIso: string
+): File {
+  const svgContent = buildOfficialCertificateSvgString(participant, issuedDateIso);
+  const safeFileName = `certificate-${participant.selected_track_id}-${participant.university_id}.svg`;
+  const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+  return new File([blob], safeFileName, { type: 'image/svg+xml' });
 }
 
 function escapeXml(unsafe: string): string {

@@ -2,28 +2,35 @@
 
 ## 1. Push Repository to GitHub
 
-Commit your repository to GitHub. Ensure `.env` is ignored by `.gitignore` and never committed.
+Ensure `.env` is excluded via `.gitignore` and never committed. Commit and push the repository to GitHub:
+
+```bash
+git add .
+git commit -m "Replace demo backend with production Supabase integration"
+git push origin main
+```
 
 ## 2. Import Project into Vercel
 
-1. Sign in to [Vercel](https://vercel.com) and click **Add New → Project**.
-2. Import your GitHub repository.
-3. Framework Preset: **Vite**
-4. Build Command: `npm run build`
-5. Output Directory: `dist`
+1. Sign in to [Vercel](https://vercel.com) and choose **Add New → Project**.
+2. Select your GitHub repository.
+3. Build settings:
+   - **Framework Preset**: Vite
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
 
 ## 3. Configure Environment Variables in Vercel
 
-Add the following variables in **Vercel Project Settings → Environment Variables**:
+In **Vercel Project Settings → Environment Variables**, configure:
 
-| Variable | Exposure | Description |
-| :--- | :--- | :--- |
-| `VITE_SUPABASE_URL` | Public (Browser) | Your Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Public (Browser) | Your Supabase anon/publishable key |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server-Only** | Used exclusively by server-side functions (`api/*`). **Never** prefix with `VITE_`. |
-| `VITE_REGISTRATION_OPEN_AT` | Public (Optional) | ISO 8601 timestamp for registration opening |
-| `VITE_REGISTRATION_CLOSE_AT` | Public (Optional) | ISO 8601 timestamp for registration closing |
+| Variable Name | Scope / Exposure | Required | Purpose |
+| :--- | :--- | :--- | :--- |
+| `VITE_SUPABASE_URL` | Browser & Server | Yes | Supabase project URL (`https://<project-ref>.supabase.co`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser & Server | Yes | Supabase anonymous/publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server-Only** | Yes | Used by `/api/register` serverless function to read `program_settings` and insert into `public.registrations`. **Never** prefix with `VITE_`. |
+| `REGISTRATION_OPEN_AT` | Server-Only | Optional | Fallback ISO 8601 opening timestamp if `public.program_settings` is absent |
+| `REGISTRATION_CLOSE_AT` | Server-Only | Optional | Fallback ISO 8601 closing timestamp if `public.program_settings` is absent |
 
-## 4. Direct Route Refresh & SPA Routing
+## 4. Routing & Serverless Functions
 
-`vercel.json` is preconfigured to route `/api/*` requests to serverless functions and rewrite all client routes (`/discover`, `/tracks/*`, `/register`, `/login`, `/dashboard`, `/admin`) to `/index.html` so direct browser refreshes work seamlessly.
+`vercel.json` routes `/api/*` requests to the Vercel Serverless Functions in `api/` (`api/register.ts`) and rewrites all frontend navigation routes (`/discover`, `/tracks/*`, `/register`, `/login`, `/dashboard`, `/admin`) to `/index.html` so direct refreshes work in production.

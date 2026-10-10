@@ -5,6 +5,9 @@ export const TRANSLATIONS = {
       description:
         'برنامج تدريبي يقدمه نادي القانون بجامعة الملك سعود بالتعاون مع نخبة من الجهات القانونية، يحاكي بيئة العمل داخل الإدارات القانونية عبر أربعة مسارات متوازية.'
     },
+    common: {
+      loading: 'جاري التحميل...'
+    },
     nav: {
       home: 'الرئيسية',
       tracks: 'المسارات',
@@ -236,9 +239,8 @@ export const TRANSLATIONS = {
       noPublicSignupNote:
         'ملاحظة: لا يتاح إنشاء حساب عام في الموقع. تُنشأ حسابات المشاركين تلقائيًا للمقبولين فقط بعد مراجعة طلبات التسجيل.',
       invalidCredentials: 'بيانات الدخول غير صحيحة. يرجى التأكد من البريد الإلكتروني وكلمة المرور.',
-      demoCredentialsTitle: 'بيانات تجربة سريعة (للمعاينة والاختبار)',
-      demoParticipantBtn: 'تجربة دخول مشارك مقبول',
-      demoAdminBtn: 'تجربة دخول الإدارة (/admin)'
+      accountNotActive: 'هذا الحساب غير مخول بالدخول أو لم يتم تفعيل ملف المشارك الخاص به.',
+      serverNotConfigured: 'لم يتم تهيئة اتصال قاعدة البيانات بعد. يرجى التحقق من إعدادات البيئة.'
     },
     dashboardPage: {
       title: 'حساب المشارك',
@@ -266,7 +268,8 @@ export const TRANSLATIONS = {
       passwordChangeSubtitle: 'تستخدم حاليًا كلمة مرور مؤقتة. يُنصح بتعيين كلمة مرور جديدة خاصة بك.',
       newPasswordLabel: 'كلمة المرور الجديدة',
       updatePasswordBtn: 'حفظ كلمة المرور الجديدة',
-      passwordUpdatedMsg: 'تم تحديث كلمة المرور بنجاح.'
+      passwordUpdatedMsg: 'تم تحديث كلمة المرور بنجاح.',
+      passwordUpdateError: 'تعذر تحديث كلمة المرور. يرجى التأكد من أن كلمة المرور لا تقل عن ٨ أحرف.'
     },
     adminPage: {
       title: 'لوحة الإدارة الداخلية',
@@ -290,7 +293,8 @@ export const TRANSLATIONS = {
         status: 'الحالة',
         actions: 'الإجراءات',
         openDetails: 'عرض التفاصيل',
-        noResults: 'لا توجد طلبات مطابقة لمعايير البحث.'
+        noResults: 'لا توجد طلبات مطابقة لمعايير البحث.',
+        noParticipants: 'لا يوجد مشاركون مقبولون حتى الآن.'
       },
       statusLabels: {
         pending: 'قيد المراجعة',
@@ -306,7 +310,8 @@ export const TRANSLATIONS = {
         trackOverrideLabel: 'تعديل المسار عند الضرورة الإدارية',
         accountCreatedBadge: 'تم إنشاء حساب المشارك',
         credentialsTitle: 'بيانات دخول المشارك المُنشأة (تُعرض لمرة واحدة لإرسالها للمشارك)',
-        tempPasswordLabel: 'كلمة المرور المؤقتة:'
+        tempPasswordLabel: 'كلمة المرور المؤقتة:',
+        actionError: 'حدث خطأ أثناء تنفيذ العملية. يرجى المحاولة مرة أخرى.'
       },
       participants: {
         certificateStatus: 'حالة الشهادة',
@@ -323,7 +328,7 @@ export const TRANSLATIONS = {
         currentStatusLabel: 'حالة التسجيل الحالية في الموقع:',
         saveSettingsBtn: 'حفظ إعدادات التسجيل',
         savedSuccess: 'تم تحديث فترة التسجيل بنجاح.',
-        quickPresets: 'اختبار سريع لحالات التسجيل:'
+        invalidDateRange: 'يجب أن يكون وقت فتح التسجيل سابقًا لوقت إغلاق التسجيل.'
       }
     },
     footer: {
@@ -344,6 +349,9 @@ export const TRANSLATIONS = {
       title: 'Legal Department Tracks | Law Club - King Saud University',
       description:
         'A training program presented by the Law Club at King Saud University in cooperation with leading legal entities, simulating the work environment inside legal departments across four parallel tracks.'
+    },
+    common: {
+      loading: 'Loading...'
     },
     nav: {
       home: 'Home',
@@ -576,9 +584,8 @@ export const TRANSLATIONS = {
       noPublicSignupNote:
         'Note: Public account creation is not available. Participant accounts are created exclusively for accepted applicants following application review.',
       invalidCredentials: 'Invalid email or password. Please verify your credentials and try again.',
-      demoCredentialsTitle: 'Quick Preview Access (For Evaluation)',
-      demoParticipantBtn: 'Sign in as Accepted Participant',
-      demoAdminBtn: 'Sign in as Administrator (/admin)'
+      accountNotActive: 'This account is not authorized or does not have an active participant profile.',
+      serverNotConfigured: 'Database connection is not yet configured. Please check environment variables.'
     },
     dashboardPage: {
       title: 'Participant Portal',
@@ -607,7 +614,8 @@ export const TRANSLATIONS = {
       passwordChangeSubtitle: 'You are currently using a temporary password. Please set a new personal password.',
       newPasswordLabel: 'New Password',
       updatePasswordBtn: 'Save New Password',
-      passwordUpdatedMsg: 'Your password has been updated successfully.'
+      passwordUpdatedMsg: 'Your password has been updated successfully.',
+      passwordUpdateError: 'Unable to update password. Please ensure your new password is at least 8 characters.'
     },
     adminPage: {
       title: 'Internal Administration',
@@ -631,7 +639,8 @@ export const TRANSLATIONS = {
         status: 'Status',
         actions: 'Actions',
         openDetails: 'Review Details',
-        noResults: 'No applications match the selected filters.'
+        noResults: 'No applications match the selected filters.',
+        noParticipants: 'No accepted participants yet.'
       },
       statusLabels: {
         pending: 'Pending',
@@ -647,7 +656,8 @@ export const TRANSLATIONS = {
         trackOverrideLabel: 'Administrative Track Adjustment (Optional)',
         accountCreatedBadge: 'Participant Account Active',
         credentialsTitle: 'Generated Participant Credentials (Displayed once for dispatch)',
-        tempPasswordLabel: 'Temporary Password:'
+        tempPasswordLabel: 'Temporary Password:',
+        actionError: 'An error occurred while processing the request. Please try again.'
       },
       participants: {
         certificateStatus: 'Certificate Status',
@@ -664,7 +674,7 @@ export const TRANSLATIONS = {
         currentStatusLabel: 'Current Public Registration State:',
         saveSettingsBtn: 'Save Registration Window',
         savedSuccess: 'Registration dates updated successfully.',
-        quickPresets: 'Quick State Presets:'
+        invalidDateRange: 'Registration open time must be earlier than the close time.'
       }
     },
     footer: {

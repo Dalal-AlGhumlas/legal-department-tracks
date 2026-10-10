@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Eye, Download, LogOut, X, CheckCircle2 } from 'lucide-react';
+import { Eye, Download, LogOut, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useProgramStore } from '../services/programStore';
 import { TRACKS_BY_SLUG } from '../config/tracks';
@@ -11,7 +11,10 @@ export const DashboardPage: React.FC = () => {
   const { lang, t } = useLanguage();
   const {
     currentUser,
+    authLoading,
+    dataLoading,
     signOut,
+    loadParticipantProfile,
     getMyParticipantProfile,
     getMyCertificate,
     getSignedCertificateUrl,
@@ -22,6 +25,24 @@ export const DashboardPage: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [isUpdatingPass, setIsUpdatingPass] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && currentUser?.role === 'participant') {
+      loadParticipantProfile(currentUser.id).catch(() => {
+        // Handled by null profile state
+      });
+    }
+  }, [authLoading, currentUser?.id, currentUser?.role, loadParticipantProfile]);
+
+  if (authLoading || dataLoading) {
+    return (
+      <div className="py-24 text-center text-lg font-bold text-[#3C4620]">
+        {t.common.loading}
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;
@@ -55,33 +76,59 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleViewCertificate = async () => {
-    const signed = await getSignedCertificateUrl(profile.id);
-    if (signed) {
-      setPreviewUrl(signed);
+    try {
+      const signed = await getSignedCertificateUrl(profile.id);
+      if (signed) {
+        setPreviewUrl(signed);
+      }
+    } catch {
+      // Do not expose raw storage error
     }
   };
 
   const handleDownloadCertificate = async () => {
-    const signed = await getSignedCertificateUrl(profile.id);
-    if (!signed || !certificate) return;
+    try {
+      const signed = await getSignedCertificateUrl(profile.id);
+      if (!signed || !certificate) return;
 
-    const a = document.createElement('a');
-    a.href = signed;
-    a.download = certificate.file_name || 'certificate.svg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+      const a = document.createElement('a');
+      a.href = signed;
+      a.download = certificate.file_name || 'certificate.svg';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      // Do not expose raw storage error
+    }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.trim().length < 6) return;
-    await updateParticipantPassword(newPassword.trim());
-    setNewPassword('');
-    setPasswordSaved(true);
+    if (isUpdatingPass) return;
+
+    if (newPassword.trim().length < 8) {
+      setPasswordError(t.dashboardPage.passwordUpdateError);
+      return;
+    }
+
+    setPasswordError('');
+    setIsUpdatingPass(true);
+    try {
+      await updateParticipantPassword(newPassword.trim());
+      setNewPassword('');
+      setPasswordSaved(true);
+    } catch {
+      setPasswordError(t.dashboardPage.passwordUpdateError);
+    } finally {
+      setIsUpdatingPass(false);
+    }
   };
 
   const d = t.dashboardPage;
+  const isPdfCertificate = certificate?.file_name
+    ?.toLowerCase()
+    .endsWith('.pdf');
 
   return (
     <div className="py-12 md:py-20">
@@ -119,6 +166,16 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
 
+            {passwordError && (
+              <div
+                role="alert"
+                className="p-3 rounded bg-[#E45C10]/10 border border-[#E45C10] text-sm font-bold text-[#3C4620] flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-[#E45C10] shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
             {passwordSaved ? (
               <div className="flex items-center gap-2 text-base font-bold text-[#4B5D16]">
                 <CheckCircle2 className="w-5 h-5" />
@@ -141,7 +198,7 @@ export const DashboardPage: React.FC = () => {
                     type="password"
                     dir="ltr"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-md bg-[#FAF7F0] border border-[#DDD2BC] text-[#3C4620]"
@@ -149,7 +206,8 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 text-base font-bold rounded-md bg-[#3C4620] text-[#ECE2CE] hover:bg-[#4B5D16] btn-press cursor-pointer"
+                  disabled={isUpdatingPass}
+                  className="px-6 py-2.5 text-base font-bold rounded-md bg-[#3C4620] text-[#ECE2CE] hover:bg-[#4B5D16] disabled:opacity-60 btn-press cursor-pointer"
                 >
                   {d.updatePasswordBtn}
                 </button>
@@ -353,11 +411,20 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             <div className="bg-[#FAF7F0] border border-[#DDD2BC] rounded overflow-hidden flex items-center justify-center max-h-[72vh]">
-              <img
-                src={previewUrl}
-                alt={d.certificateTitle}
-                className="max-w-full max-h-[70vh] object-contain"
-              />
+              {isPdfCertificate ? (
+                <iframe
+                  src={previewUrl}
+                  title={d.certificateTitle}
+                  className="w-full h-[70vh] border-0"
+                />
+              ) : (
+                <img
+                  src={previewUrl}
+                  alt={d.certificateTitle}
+                  referrerPolicy="no-referrer"
+                  className="max-w-full max-h-[70vh] object-contain"
+                />
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

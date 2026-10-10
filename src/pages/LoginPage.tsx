@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useProgramStore } from '../services/programStore';
 
 export const LoginPage: React.FC = () => {
   const { t } = useLanguage();
-  const { signIn, requestPasswordReset } = useProgramStore();
+  const { currentUser, authLoading, signIn, requestPasswordReset } =
+    useProgramStore();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -16,6 +17,34 @@ export const LoginPage: React.FC = () => {
 
   const [isResetMode, setIsResetMode] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+
+  if (authLoading) {
+    return (
+      <div className="py-24 text-center text-lg font-bold text-[#3C4620]">
+        {t.common.loading}
+      </div>
+    );
+  }
+
+  if (currentUser) {
+    return (
+      <Navigate
+        to={currentUser.role === 'admin' ? '/admin' : '/dashboard'}
+        replace
+      />
+    );
+  }
+
+  const mapAuthError = (err: unknown): string => {
+    const code = err instanceof Error ? err.message : '';
+    if (code === 'ACCOUNT_NOT_ACTIVE' || code === 'FORBIDDEN') {
+      return t.loginPage.accountNotActive;
+    }
+    if (code === 'SERVER_NOT_CONFIGURED') {
+      return t.loginPage.serverNotConfigured;
+    }
+    return t.loginPage.invalidCredentials;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,27 +59,8 @@ export const LoginPage: React.FC = () => {
       } else {
         navigate('/dashboard');
       }
-    } catch {
-      setError(t.loginPage.invalidCredentials);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleQuickSignIn = async (demoEmail: string, demoPass: string) => {
-    setError('');
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setIsLoading(true);
-    try {
-      const user = await signIn(demoEmail, demoPass);
-      if (user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch {
-      setError(t.loginPage.invalidCredentials);
+    } catch (err) {
+      setError(mapAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -58,11 +68,19 @@ export const LoginPage: React.FC = () => {
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || isLoading) return;
+    setError('');
     setIsLoading(true);
     try {
       await requestPasswordReset(email);
       setResetSuccess(true);
+    } catch (err) {
+      const code = err instanceof Error ? err.message : '';
+      if (code === 'SERVER_NOT_CONFIGURED') {
+        setError(t.loginPage.serverNotConfigured);
+      } else {
+        setResetSuccess(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -159,39 +177,6 @@ export const LoginPage: React.FC = () => {
             <p className="text-sm text-[#3C4620]/75 leading-relaxed border-t border-[#DDD2BC] pt-6">
               {t.loginPage.noPublicSignupNote}
             </p>
-
-            {/* Quick Evaluation Sign-in Helper */}
-            <div className="pt-4 border-t border-[#DDD2BC] space-y-3">
-              <p className="text-xs font-bold text-[#4B5D16]">
-                {t.loginPage.demoCredentialsTitle}
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleQuickSignIn(
-                      'sara.alotaibi@student.ksu.edu.sa',
-                      'MasarPart2026!'
-                    )
-                  }
-                  className="px-4 py-2 text-sm font-bold rounded-md bg-[#ECE2CE] text-[#3C4620] hover:bg-[#DDD2BC] btn-press cursor-pointer"
-                >
-                  {t.loginPage.demoParticipantBtn}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleQuickSignIn(
-                      'development.lawclub@gmail.com',
-                      'MasarAdmin2026!'
-                    )
-                  }
-                  className="px-4 py-2 text-sm font-bold rounded-md border border-[#3C4620]/30 text-[#3C4620] hover:border-[#3C4620] btn-press cursor-pointer"
-                >
-                  {t.loginPage.demoAdminBtn}
-                </button>
-              </div>
-            </div>
           </>
         ) : (
           <div className="space-y-6">
@@ -203,6 +188,16 @@ export const LoginPage: React.FC = () => {
                 {t.loginPage.resetPasswordSubtitle}
               </p>
             </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="p-4 rounded-md bg-[#E45C10]/10 border border-[#E45C10] text-[#3C4620] flex items-start gap-3"
+              >
+                <AlertCircle className="w-5 h-5 text-[#E45C10] shrink-0 mt-0.5" />
+                <span className="text-base font-bold">{error}</span>
+              </div>
+            )}
 
             {resetSuccess ? (
               <div className="p-5 rounded-md bg-[#4B5D16]/10 border border-[#4B5D16] text-[#3C4620] flex items-start gap-3">

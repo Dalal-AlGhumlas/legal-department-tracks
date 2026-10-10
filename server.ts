@@ -1,17 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
+import registerHandler from './api/register.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-let serverRegistrationWindow = {
-  registration_open_at:
-    process.env.VITE_REGISTRATION_OPEN_AT || '2026-09-25T00:00:00+03:00',
-  registration_close_at:
-    process.env.VITE_REGISTRATION_CLOSE_AT || '2026-10-11T23:59:59+03:00'
-};
 
 async function startServer() {
   const app = express();
@@ -19,44 +14,9 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Server-side registration deadline validation endpoint
-  app.post('/api/register', (req, res) => {
-    const openIso =
-      req.body?.openAt || serverRegistrationWindow.registration_open_at;
-    const closeIso =
-      req.body?.closeAt || serverRegistrationWindow.registration_close_at;
-
-    const openTime = new Date(openIso).getTime();
-    const closeTime = new Date(closeIso).getTime();
-    const now = Date.now();
-
-    if (now < openTime) {
-      res.status(403).json({ error: 'REGISTRATION_NOT_OPEN_YET' });
-      return;
-    }
-
-    if (now > closeTime) {
-      res.status(403).json({ error: 'REGISTRATION_CLOSED' });
-      return;
-    }
-
-    if (!req.body?.attendance_commitment_confirmed) {
-      res.status(400).json({ error: 'COMMITMENT_REQUIRED' });
-      return;
-    }
-
-    res.status(200).json({ ok: true });
-  });
-
-  // Server-side registration window settings update
-  app.post('/api/settings', (req, res) => {
-    if (req.body?.registration_open_at && req.body?.registration_close_at) {
-      serverRegistrationWindow = {
-        registration_open_at: req.body.registration_open_at,
-        registration_close_at: req.body.registration_close_at
-      };
-    }
-    res.status(200).json(serverRegistrationWindow);
+  // Mount the authoritative registration serverless handler at POST /api/register
+  app.all('/api/register', (req, res) => {
+    registerHandler(req, res);
   });
 
   if (process.env.NODE_ENV !== 'production') {

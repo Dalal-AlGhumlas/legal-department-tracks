@@ -31,6 +31,18 @@ export type KnowledgeLevel = 'متقدم' | 'متوسط' | 'مبتدئ';
 
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected';
 
+export type AppErrorCode =
+  | 'REGISTRATION_CLOSED'
+  | 'REGISTRATION_NOT_OPEN_YET'
+  | 'EMAIL_DUPLICATE'
+  | 'INVALID_REGISTRATION_DATA'
+  | 'INVALID_CREDENTIALS'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'ACCOUNT_NOT_ACTIVE'
+  | 'CERTIFICATE_NOT_AVAILABLE'
+  | 'SERVER_NOT_CONFIGURED';
+
 export interface RegistrationPayload {
   full_name: string;
   email: string;
@@ -54,7 +66,7 @@ export interface RegistrationRecord extends RegistrationPayload {
   updated_at: string;
   reviewed_at: string | null;
   reviewed_by: string | null;
-  participant_account_created?: boolean;
+  participant_account_created: boolean;
 }
 
 export interface ParticipantProfile {
@@ -83,7 +95,7 @@ export interface CertificateRecord {
   file_name: string;
   issued_at: string;
   issued_by: string | null;
-  signed_url?: string;
+  created_at?: string;
 }
 
 export interface ProgramSettings {

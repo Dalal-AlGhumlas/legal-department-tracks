@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -8,7 +8,8 @@ import {
   Upload,
   Eye,
   X,
-  KeyRound
+  KeyRound,
+  AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useProgramStore } from '../services/programStore';
@@ -19,12 +20,15 @@ export const AdminPage: React.FC = () => {
   const { lang, t } = useLanguage();
   const {
     currentUser,
+    authLoading,
+    dataLoading,
     signOut,
     registrations,
     participants,
     certificates,
     settings,
     registrationState,
+    refreshAdminData,
     reviewApplication,
     issueOrUploadCertificate,
     getSignedCertificateUrl,
@@ -38,23 +42,29 @@ export const AdminPage: React.FC = () => {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>(
+    'all'
+  );
   const [trackFilter, setTrackFilter] = useState<TrackSlug | 'all'>('all');
 
   // Applicant Modal State
-  const [selectedReg, setSelectedReg] = useState<RegistrationRecord | null>(null);
+  const [selectedReg, setSelectedReg] = useState<RegistrationRecord | null>(
+    null
+  );
   const [overrideTrack, setOverrideTrack] = useState<TrackSlug | ''>('');
   const [isReviewing, setIsReviewing] = useState(false);
+  const [modalError, setModalError] = useState('');
   const [generatedCreds, setGeneratedCreds] = useState<{
     email: string;
     temporaryPassword: string;
   } | null>(null);
 
   // Certificates state
-  const [uploadingParticipantId, setUploadingParticipantId] = useState<string | null>(
-    null
-  );
+  const [uploadingParticipantId, setUploadingParticipantId] = useState<
+    string | null
+  >(null);
   const [previewCertUrl, setPreviewCertUrl] = useState<string | null>(null);
+  const [previewCertIsPdf, setPreviewCertIsPdf] = useState<boolean>(false);
 
   // Settings state
   const [openAtInput, setOpenAtInput] = useState(
@@ -64,14 +74,20 @@ export const AdminPage: React.FC = () => {
     settings.registration_close_at.slice(0, 16)
   );
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
 
-  // Enforce strict Admin authorization
-  if (!currentUser) {
-    return <Navigate to="/login" replace />;
-  }
-  if (currentUser.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
+  useEffect(() => {
+    setOpenAtInput(settings.registration_open_at.slice(0, 16));
+    setCloseAtInput(settings.registration_close_at.slice(0, 16));
+  }, [settings.registration_open_at, settings.registration_close_at]);
+
+  useEffect(() => {
+    if (!authLoading && currentUser?.role === 'admin') {
+      refreshAdminData().catch(() => {
+        // Handled by empty/error states
+      });
+    }
+  }, [authLoading, currentUser?.id, currentUser?.role, refreshAdminData]);
 
   const filteredRegistrations = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -89,20 +105,40 @@ export const AdminPage: React.FC = () => {
     });
   }, [registrations, searchQuery, statusFilter, trackFilter]);
 
+  if (authLoading) {
+    return (
+      <div className="py-24 text-center text-lg font-bold text-[#3C4620]">
+        {t.common.loading}
+      </div>
+    );
+  }
+
+  // Enforce strict Admin authorization
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  if (currentUser.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleOpenApplicant = (reg: RegistrationRecord) => {
     setSelectedReg(reg);
     setOverrideTrack(reg.selected_track_id);
     setGeneratedCreds(null);
+    setModalError('');
   };
 
   const handleReviewDecision = async (decision: 'accepted' | 'rejected') => {
     if (!selectedReg || isReviewing) return;
     setIsReviewing(true);
+    setModalError('');
     try {
+      const finalTrack =
+        (overrideTrack as TrackSlug) || selectedReg.selected_track_id;
       const result = await reviewApplication(
         selectedReg.id,
         decision,
-        (overrideTrack as TrackSlug) || selectedReg.selected_track_id
+        finalTrack
       );
 
       setSelectedReg((prev) =>
@@ -110,8 +146,7 @@ export const AdminPage: React.FC = () => {
           ? {
               ...prev,
               status: decision,
-              selected_track_id:
-                (overrideTrack as TrackSlug) || prev.selected_track_id,
+              selected_track_id: finalTrack,
               participant_account_created:
                 decision === 'accepted' ? true : prev.participant_account_created
             }
@@ -121,6 +156,8 @@ export const AdminPage: React.FC = () => {
       if (result.generatedCredentials) {
         setGeneratedCreds(result.generatedCredentials);
       }
+    } catch {
+      setModalError(t.adminPage.modal.actionError);
     } finally {
       setIsReviewing(false);
     }
@@ -130,6 +167,8 @@ export const AdminPage: React.FC = () => {
     setUploadingParticipantId(participantId);
     try {
       await issueOrUploadCertificate(participantId, null);
+    } catch {
+      // Handled silently
     } finally {
       setUploadingParticipantId(null);
     }
@@ -144,6 +183,8 @@ export const AdminPage: React.FC = () => {
     setUploadingParticipantId(participantId);
     try {
       await issueOrUploadCertificate(participantId, file);
+    } catch {
+      // Handled silently
     } finally {
       setUploadingParticipantId(null);
       e.target.value = '';
@@ -151,40 +192,47 @@ export const AdminPage: React.FC = () => {
   };
 
   const handlePreviewCert = async (participantId: string) => {
-    const url = await getSignedCertificateUrl(participantId);
-    if (url) setPreviewCertUrl(url);
+    try {
+      const cert = certificates[participantId];
+      const url = await getSignedCertificateUrl(participantId);
+      if (url) {
+        setPreviewCertIsPdf(
+          Boolean(cert?.file_name?.toLowerCase().endsWith('.pdf'))
+        );
+        setPreviewCertUrl(url);
+      }
+    } catch {
+      // Ignore preview failure
+    }
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    const openIso = new Date(openAtInput).toISOString();
-    const closeIso = new Date(closeAtInput).toISOString();
-    await updateRegistrationWindow(openIso, closeIso);
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 3000);
-  };
+    setSettingsError('');
+    setSettingsSaved(false);
 
-  const applyQuickWindowPreset = async (mode: 'open' | 'closed' | 'before') => {
-    const now = Date.now();
-    let openIso = '';
-    let closeIso = '';
+    const openDate = new Date(openAtInput);
+    const closeDate = new Date(closeAtInput);
 
-    if (mode === 'open') {
-      openIso = new Date(now - 7 * 86400000).toISOString();
-      closeIso = new Date(now + 7 * 86400000).toISOString();
-    } else if (mode === 'closed') {
-      openIso = new Date(now - 14 * 86400000).toISOString();
-      closeIso = new Date(now - 3600000).toISOString();
-    } else {
-      openIso = new Date(now + 3 * 86400000).toISOString();
-      closeIso = new Date(now + 10 * 86400000).toISOString();
+    if (
+      Number.isNaN(openDate.getTime()) ||
+      Number.isNaN(closeDate.getTime()) ||
+      openDate.getTime() >= closeDate.getTime()
+    ) {
+      setSettingsError(t.adminPage.settings.invalidDateRange);
+      return;
     }
 
-    setOpenAtInput(openIso.slice(0, 16));
-    setCloseAtInput(closeIso.slice(0, 16));
-    await updateRegistrationWindow(openIso, closeIso);
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 3000);
+    try {
+      await updateRegistrationWindow(
+        openDate.toISOString(),
+        closeDate.toISOString()
+      );
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    } catch {
+      setSettingsError(t.adminPage.modal.actionError);
+    }
   };
 
   const a = t.adminPage;
@@ -222,8 +270,16 @@ export const AdminPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 border-b border-[#DDD2BC] pb-4">
           {(
             [
-              { id: 'registrations', label: a.tabs.registrations, count: registrations.length },
-              { id: 'participants', label: a.tabs.participants, count: participants.length },
+              {
+                id: 'registrations',
+                label: a.tabs.registrations,
+                count: registrations.length
+              },
+              {
+                id: 'participants',
+                label: a.tabs.participants,
+                count: participants.length
+              },
               { id: 'settings', label: a.tabs.settings }
             ] as const
           ).map((tab) => {
@@ -250,8 +306,14 @@ export const AdminPage: React.FC = () => {
           })}
         </div>
 
+        {dataLoading && (
+          <div className="py-8 text-center text-base font-bold text-[#3C4620]/80">
+            {t.common.loading}
+          </div>
+        )}
+
         {/* TAB 1: REGISTRATIONS */}
-        {activeTab === 'registrations' && (
+        {!dataLoading && activeTab === 'registrations' && (
           <div className="space-y-6">
             {/* Search and Filter Controls */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -344,7 +406,9 @@ export const AdminPage: React.FC = () => {
                           <div className="text-[#3C4620]">{reg.university}</div>
                           <div className="text-sm text-[#3C4620]/70">
                             {reg.academic_level} ·{' '}
-                            <span className="tabular-nums">{reg.university_id}</span>
+                            <span className="tabular-nums">
+                              {reg.university_id}
+                            </span>
                           </div>
                         </td>
                         <td className="py-4 px-4 font-bold text-[#3C4620]">
@@ -382,7 +446,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* TAB 2: ACCEPTED PARTICIPANTS & CERTIFICATES */}
-        {activeTab === 'participants' && (
+        {!dataLoading && activeTab === 'participants' && (
           <div className="bg-[#FAF7F0] border border-[#DDD2BC] rounded-lg overflow-x-auto">
             <table className="w-full text-start border-collapse">
               <thead>
@@ -396,89 +460,102 @@ export const AdminPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DDD2BC] text-base">
-                {participants.map((part) => {
-                  const cert = certificates[part.id];
-                  const isBusy = uploadingParticipantId === part.id;
-                  return (
-                    <tr key={part.id} className="hover:bg-[#ECE2CE]/30">
-                      <td className="py-4 px-4">
-                        <div className="font-bold text-[#3C4620]">
-                          {part.full_name}
-                        </div>
-                        <div
-                          dir="ltr"
-                          className="text-sm text-[#3C4620]/70 text-start tabular-nums"
-                        >
-                          {part.email} · {part.university_id}
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 font-bold text-[#3C4620]">
-                        {getTrackLabel(part.selected_track_id)}
-                      </td>
-                      <td className="py-4 px-4">
-                        {cert ? (
-                          <span className="text-sm font-bold text-[#4B5D16]">
-                            {a.participants.certIssued} ({cert.file_name})
-                          </span>
-                        ) : (
-                          <span className="text-sm text-[#3C4620]/70">
-                            {a.participants.certNotIssued}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-end">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          {cert && (
+                {participants.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="py-10 text-center text-[#3C4620]/70"
+                    >
+                      {a.table.noParticipants}
+                    </td>
+                  </tr>
+                ) : (
+                  participants.map((part) => {
+                    const cert = certificates[part.id];
+                    const isBusy = uploadingParticipantId === part.id;
+                    return (
+                      <tr key={part.id} className="hover:bg-[#ECE2CE]/30">
+                        <td className="py-4 px-4">
+                          <div className="font-bold text-[#3C4620]">
+                            {part.full_name}
+                          </div>
+                          <div
+                            dir="ltr"
+                            className="text-sm text-[#3C4620]/70 text-start tabular-nums"
+                          >
+                            {part.email} · {part.university_id}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 font-bold text-[#3C4620]">
+                          {getTrackLabel(part.selected_track_id)}
+                        </td>
+                        <td className="py-4 px-4">
+                          {cert ? (
+                            <span className="text-sm font-bold text-[#4B5D16]">
+                              {a.participants.certIssued} ({cert.file_name})
+                            </span>
+                          ) : (
+                            <span className="text-sm text-[#3C4620]/70">
+                              {a.participants.certNotIssued}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-end">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {cert && (
+                              <button
+                                type="button"
+                                onClick={() => handlePreviewCert(part.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md border border-[#3C4620]/30 text-[#3C4620] hover:border-[#3C4620] cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>{a.participants.viewCertBtn}</span>
+                              </button>
+                            )}
+
                             <button
                               type="button"
-                              onClick={() => handlePreviewCert(part.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md border border-[#3C4620]/30 text-[#3C4620] hover:border-[#3C4620] cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>{a.participants.viewCertBtn}</span>
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => handleIssueDefaultCertificate(part.id)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-md bg-[#3C4620] text-[#ECE2CE] hover:bg-[#4B5D16] cursor-pointer"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>
-                              {isBusy
-                                ? a.participants.uploading
-                                : cert
-                                ? a.participants.replaceCertBtn
-                                : a.participants.uploadCertBtn}
-                            </span>
-                          </button>
-
-                          <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md bg-[#ECE2CE] text-[#3C4620] hover:bg-[#DDD2BC] cursor-pointer">
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>PDF / PNG</span>
-                            <input
-                              type="file"
-                              accept=".pdf,.png,.jpg,.jpeg,.svg"
-                              onChange={(e) =>
-                                handleFileUploadCertificate(part.id, e)
+                              disabled={isBusy}
+                              onClick={() =>
+                                handleIssueDefaultCertificate(part.id)
                               }
-                              className="hidden"
-                            />
-                          </label>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-md bg-[#3C4620] text-[#ECE2CE] hover:bg-[#4B5D16] disabled:opacity-60 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>
+                                {isBusy
+                                  ? a.participants.uploading
+                                  : cert
+                                  ? a.participants.replaceCertBtn
+                                  : a.participants.uploadCertBtn}
+                              </span>
+                            </button>
+
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md bg-[#ECE2CE] text-[#3C4620] hover:bg-[#DDD2BC] cursor-pointer">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>PDF / PNG</span>
+                              <input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg,.svg"
+                                onChange={(e) =>
+                                  handleFileUploadCertificate(part.id, e)
+                                }
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
         )}
 
         {/* TAB 3: REGISTRATION WINDOW SETTINGS */}
-        {activeTab === 'settings' && (
+        {!dataLoading && activeTab === 'settings' && (
           <div className="max-w-xl bg-[#FAF7F0] border border-[#DDD2BC] rounded-lg p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-[#DDD2BC] pb-4">
               <span className="text-base font-bold text-[#3C4620]">
@@ -492,6 +569,16 @@ export const AdminPage: React.FC = () => {
                   : t.nav.ctaBefore}
               </span>
             </div>
+
+            {settingsError && (
+              <div
+                role="alert"
+                className="p-3.5 rounded-md bg-[#E45C10]/10 border border-[#E45C10] text-sm font-bold text-[#3C4620] flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-[#E45C10] shrink-0" />
+                <span>{settingsError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSaveSettings} className="space-y-4">
               <div className="space-y-1.5">
@@ -541,36 +628,6 @@ export const AdminPage: React.FC = () => {
                 {a.settings.saveSettingsBtn}
               </button>
             </form>
-
-            {/* Quick State Presets for immediate verification */}
-            <div className="pt-4 border-t border-[#DDD2BC] space-y-3">
-              <p className="text-sm font-bold text-[#3C4620]/80">
-                {a.settings.quickPresets}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyQuickWindowPreset('open')}
-                  className="px-3.5 py-1.5 text-sm font-bold rounded bg-[#ECE2CE] text-[#3C4620] hover:bg-[#DDD2BC] cursor-pointer"
-                >
-                  {t.nav.ctaOpen} (Open)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyQuickWindowPreset('closed')}
-                  className="px-3.5 py-1.5 text-sm font-bold rounded bg-[#ECE2CE] text-[#3C4620] hover:bg-[#DDD2BC] cursor-pointer"
-                >
-                  {t.nav.ctaClosed} (Closed)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyQuickWindowPreset('before')}
-                  className="px-3.5 py-1.5 text-sm font-bold rounded bg-[#ECE2CE] text-[#3C4620] hover:bg-[#DDD2BC] cursor-pointer"
-                >
-                  {t.nav.ctaBefore} (Before)
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>
@@ -595,6 +652,16 @@ export const AdminPage: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {modalError && (
+              <div
+                role="alert"
+                className="p-3.5 rounded-md bg-[#E45C10]/10 border border-[#E45C10] text-sm font-bold text-[#3C4620] flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-[#E45C10] shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
               <div>
@@ -738,7 +805,7 @@ export const AdminPage: React.FC = () => {
                   type="button"
                   disabled={isReviewing}
                   onClick={() => handleReviewDecision('accepted')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] hover:bg-[#3C4620] cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] hover:bg-[#3C4620] disabled:opacity-60 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>
@@ -748,9 +815,9 @@ export const AdminPage: React.FC = () => {
 
                 <button
                   type="button"
-                  disabled={isReviewing}
+                  disabled={isReviewing || selectedReg.participant_account_created}
                   onClick={() => handleReviewDecision('rejected')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-[#ECE2CE] cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-[#ECE2CE] disabled:opacity-40 cursor-pointer"
                 >
                   <XCircle className="w-4 h-4" />
                   <span>{a.modal.rejectBtn}</span>
@@ -790,11 +857,20 @@ export const AdminPage: React.FC = () => {
               </button>
             </div>
             <div className="bg-[#FAF7F0] border border-[#DDD2BC] rounded overflow-hidden flex items-center justify-center max-h-[75vh]">
-              <img
-                src={previewCertUrl}
-                alt="Certificate Preview"
-                className="max-w-full max-h-[72vh] object-contain"
-              />
+              {previewCertIsPdf ? (
+                <iframe
+                  src={previewCertUrl}
+                  title={a.participants.viewCertBtn}
+                  className="w-full h-[70vh] border-0"
+                />
+              ) : (
+                <img
+                  src={previewCertUrl}
+                  alt="Certificate Preview"
+                  referrerPolicy="no-referrer"
+                  className="max-w-full max-h-[72vh] object-contain"
+                />
+              )}
             </div>
           </div>
         </div>

@@ -1,14 +1,12 @@
 import { RegistrationWindowState } from '../types';
 
 /**
- * Centralized registration window configuration.
- * Can be overridden by environment variables or updated dynamically via Supabase `program_settings`.
+ * Centralized registration window fallback defaults.
+ * In production, `public.program_settings` in Supabase is the authoritative source of truth.
  */
-export const DEFAULT_REGISTRATION_OPEN_AT =
-  import.meta.env.VITE_REGISTRATION_OPEN_AT || '2026-09-25T00:00:00+03:00';
+export const DEFAULT_REGISTRATION_OPEN_AT = '2026-09-25T00:00:00+03:00';
 
-export const DEFAULT_REGISTRATION_CLOSE_AT =
-  import.meta.env.VITE_REGISTRATION_CLOSE_AT || '2026-10-11T23:59:59+03:00';
+export const DEFAULT_REGISTRATION_CLOSE_AT = '2026-10-11T23:59:59+03:00';
 
 export function computeRegistrationState(
   openAtIso: string = DEFAULT_REGISTRATION_OPEN_AT,
