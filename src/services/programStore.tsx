@@ -25,7 +25,7 @@ import { supabase, isSupabaseConfigured } from '../integrations/supabase/client'
 import { buildOfficialCertificateFile } from './certificateGenerator';
 
 interface ReviewApplicationResult {
-  status: 'accepted' | 'rejected';
+  status: 'accepted' | 'rejected' | 'pending';
   participant?: ParticipantProfile;
   generatedCredentials?: {
     email: string;
@@ -57,7 +57,7 @@ interface ProgramStoreContextValue {
   updateParticipantPassword: (newPassword: string) => Promise<void>;
 reviewApplication: (
   registrationId: string,
-  decision: 'accepted' | 'rejected',
+  decision: 'accepted' | 'rejected' | 'pending',
   assignedTrackId?: TrackSlug
 ) => Promise<ReviewApplicationResult>;
   issueOrUploadCertificate: (
@@ -188,10 +188,11 @@ export const ProgramStoreProvider: React.FC<{ children: React.ReactNode }> = ({
       return [];
     }
 
-    const { data, error } = await supabase
-      .from('participants')
-      .select('*')
-      .order('created_at', { ascending: false });
+const { data, error } = await supabase
+  .from('participants')
+  .select('*')
+  .eq('is_active', true)
+  .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error('UNAUTHORIZED');
@@ -623,7 +624,7 @@ track_motivation: payload.track_motivation,
 const reviewApplication = useCallback(
 async (
   registrationId: string,
-  decision: 'accepted' | 'rejected',
+  decision: 'accepted' | 'rejected' | 'pending',
   assignedTrackId?: TrackSlug
 ): Promise<ReviewApplicationResult> => {
       if (
