@@ -274,7 +274,15 @@ tracksMustDiffer: 'يجب أن تكون الرغبة الثانية مختلفة
       newPasswordLabel: 'كلمة المرور الجديدة',
       updatePasswordBtn: 'حفظ كلمة المرور الجديدة',
       passwordUpdatedMsg: 'تم تحديث كلمة المرور بنجاح.',
-      passwordUpdateError: 'تعذر تحديث كلمة المرور. يرجى التأكد من أن كلمة المرور لا تقل عن ٨ أحرف.'
+      passwordUpdateError: 'تعذر تحديث كلمة المرور. يرجى التأكد من أن كلمة المرور لا تقل عن ٨ أحرف.',
+      passwordUpdateError: 'تعذر تحديث كلمة المرور. يرجى التأكد من أن كلمة المرور لا تقل عن ٨ أحرف.',
+attendanceTitle: 'الحضور',
+attendanceSubtitle:
+  'يتم تفعيل تسجيل الحضور خلال الفترة المحددة لكل يوم. عند تفعيل الحضور، اضغط على الزر وامسح رمز QR الموجود في القاعة.',
+attendanceButton: 'تسجيل الحضور',
+attendanceRecorded: 'تم تسجيل حضورك',
+attendanceNotStarted: 'لم يبدأ تسجيل الحضور بعد',
+attendanceClosed: 'تسجيل الحضور غير متاح حالياً'
     },
     adminPage: {
       title: 'لوحة الإدارة الداخلية',
@@ -625,7 +633,15 @@ tracksMustDiffer: 'Your second preference must be different from your first pref
       newPasswordLabel: 'New Password',
       updatePasswordBtn: 'Save New Password',
       passwordUpdatedMsg: 'Your password has been updated successfully.',
-      passwordUpdateError: 'Unable to update password. Please ensure your new password is at least 8 characters.'
+      passwordUpdateError: 'Unable to update password. Please ensure your new password is at least 8 characters.',
+      passwordUpdateError: 'Unable to update password. Please ensure your new password is at least 8 characters.',
+attendanceTitle: 'Attendance',
+attendanceSubtitle:
+  'Attendance becomes available during the designated check-in period for each day. When enabled, tap the button and scan the QR code displayed in the hall.',
+attendanceButton: 'Check In',
+attendanceRecorded: 'Attendance recorded',
+attendanceNotStarted: 'Attendance has not started yet',
+attendanceClosed: 'Attendance is currently unavailable'
     },
     adminPage: {
       title: 'Internal Administration',
