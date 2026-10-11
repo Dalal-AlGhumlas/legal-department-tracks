@@ -102,21 +102,40 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#ECE2CE]/70">
-          <p>{t.footer.copyright}</p>
-          <div className="flex items-center gap-6">
-            <span dir="ltr">{OFFICIAL_CONTACTS.clubEmail}</span>
-            <span aria-hidden="true">·</span>
-            <button
-              type="button"
-              onClick={toggleLang}
-              className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors cursor-pointer"
-            >
-              {t.nav.switchLanguage}
-            </button>
-          </div>
-        </div>
+{/* Bottom bar */}
+<div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#ECE2CE]/70">
+
+  <div className="flex flex-col gap-1 text-center sm:text-start">
+    <p>{t.footer.copyright}</p>
+
+    <p className="text-xs text-[#ECE2CE]/60" dir="ltr">
+      Designed & Developed by{' '}
+      <a
+        href="https://www.linkedin.com/in/dalal-alghumlas/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
+      >
+        Dalal AlGhumlas
+      </a>
+    </p>
+  </div>
+
+  <div className="flex items-center gap-6">
+    <span dir="ltr">{OFFICIAL_CONTACTS.clubEmail}</span>
+
+    <span aria-hidden="true">·</span>
+
+    <button
+      type="button"
+      onClick={toggleLang}
+      className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors cursor-pointer"
+    >
+      {t.nav.switchLanguage}
+    </button>
+  </div>
+
+</div>
       </div>
     </footer>
   );
