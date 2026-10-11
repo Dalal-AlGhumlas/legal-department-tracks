@@ -796,22 +796,29 @@ const handleDeleteCertificate = async (
         }
         className="w-full sm:w-64 px-4 py-2.5 rounded-md bg-[#FAF7F0] border border-[#DDD2BC] text-[#3C4620] font-bold"
       >
-        <option value="all">
-          {lang === 'ar'
-            ? 'جميع المسارات'
-            : 'All Tracks'}
-        </option>
+<option value="all">
+  {lang === 'ar'
+    ? `جميع المسارات (${participants.length})`
+    : `All Tracks (${participants.length})`}
+</option>
 
-        {TRACKS.map((track) => (
-          <option
-            key={track.slug}
-            value={track.slug}
-          >
-            {lang === 'ar'
-              ? track.nameAr
-              : track.nameEn}
-          </option>
-        ))}
+{TRACKS.map((track) => {
+  const count = participants.filter(
+    (participant) =>
+      participant.selected_track_id === track.slug
+  ).length;
+
+  return (
+    <option
+      key={track.slug}
+      value={track.slug}
+    >
+      {lang === 'ar'
+        ? `${track.nameAr} (${count})`
+        : `${track.nameEn} (${count})`}
+    </option>
+  );
+})}
       </select>
     </div>
 
