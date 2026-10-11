@@ -81,6 +81,7 @@ export interface ParticipantProfile {
   must_change_password: boolean;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 export interface CertificateRecord {
