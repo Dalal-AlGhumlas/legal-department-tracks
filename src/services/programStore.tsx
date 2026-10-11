@@ -57,7 +57,8 @@ interface ProgramStoreContextValue {
   updateParticipantPassword: (newPassword: string) => Promise<void>;
 reviewApplication: (
   registrationId: string,
-  decision: 'accepted' | 'rejected'
+  decision: 'accepted' | 'rejected',
+  assignedTrackId?: TrackSlug
 ) => Promise<ReviewApplicationResult>;
   issueOrUploadCertificate: (
     participantId: string,
@@ -620,10 +621,11 @@ track_motivation: payload.track_motivation,
   // 5. ADMIN ACTIONS (SUPABASE EDGE FUNCTION + LIVE DATA REFRESH)
   // ---------------------------------------------------------------------------
 const reviewApplication = useCallback(
-  async (
-    registrationId: string,
-    decision: 'accepted' | 'rejected'
-  ): Promise<ReviewApplicationResult> => {
+async (
+  registrationId: string,
+  decision: 'accepted' | 'rejected',
+  assignedTrackId?: TrackSlug
+): Promise<ReviewApplicationResult> => {
       if (
         !currentUser ||
         currentUser.role !== 'admin' ||
@@ -637,7 +639,8 @@ const reviewApplication = useCallback(
 body: {
   action: 'review_registration',
   registrationId,
-  decision
+  decision,
+  assignedTrackId
 }
       });
 
