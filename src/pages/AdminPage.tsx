@@ -354,8 +354,13 @@ const handleManualAttendance = async (
     const q = searchQuery.trim().toLowerCase();
     return registrations.filter((reg) => {
       if (statusFilter !== 'all' && reg.status !== statusFilter) return false;
-      if (trackFilter !== 'all' && reg.selected_track_id !== trackFilter)
-        return false;
+if (
+  trackFilter !== 'all' &&
+  reg.selected_track_id !== trackFilter &&
+  reg.second_track_id !== trackFilter
+) {
+  return false;
+}
       if (!q) return true;
       return (
         reg.full_name.toLowerCase().includes(q) ||
