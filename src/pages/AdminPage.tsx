@@ -27,7 +27,12 @@ interface AdminAttendanceSession {
   is_active: boolean;
   qr_token: string;
 }
-
+interface AdminAttendanceRecord {
+  id: string;
+  participant_id: string;
+  session_id: string;
+  checked_in_at: string;
+}
 export const AdminPage: React.FC = () => {
   const { lang, t } = useLanguage();
   const {
@@ -95,7 +100,15 @@ const [attendanceAdminError, setAttendanceAdminError] =
   useState('');
 const [savingAttendanceId, setSavingAttendanceId] =
   useState<string | null>(null);
-  
+const [attendanceRecords, setAttendanceRecords] = useState<
+  AdminAttendanceRecord[]
+>([]);
+
+const [manualParticipantBySession, setManualParticipantBySession] =
+  useState<Record<string, string>>({});
+
+const [manualAttendanceSavingId, setManualAttendanceSavingId] =
+  useState<string | null>(null);
 
   useEffect(() => {
     setOpenAtInput(settings.registration_open_at.slice(0, 16));
@@ -139,12 +152,48 @@ const [savingAttendanceId, setSavingAttendanceId] =
 
   setAttendanceAdminLoading(false);
 };
+const loadAttendanceRecords = async () => {
+  if (!supabase) return;
 
+  const { data, error } = await supabase
+    .from('attendance_records')
+    .select(
+      'id, participant_id, session_id, checked_in_at'
+    )
+    .order('checked_in_at', { ascending: true });
+
+  if (error) {
+    setAttendanceAdminError(
+      lang === 'ar'
+        ? 'تعذر تحميل سجلات الحضور.'
+        : 'Unable to load attendance records.'
+    );
+    return;
+  }
+
+  setAttendanceRecords(
+    (data || []) as AdminAttendanceRecord[]
+  );
+};
+  
 useEffect(() => {
   if (!authLoading && currentUser?.role === 'admin') {
     loadAttendanceSessions();
+    loadAttendanceRecords();
+
+    const timer = window.setInterval(() => {
+      loadAttendanceRecords();
+    }, 10000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
   }
-}, [authLoading, currentUser?.id, currentUser?.role]);
+}, [
+  authLoading,
+  currentUser?.id,
+  currentUser?.role
+]);
 
 const toDateTimeLocal = (iso: string) => {
   const date = new Date(iso);
@@ -256,7 +305,49 @@ const handleRegenerateAttendanceQr = async (
 
   setSavingAttendanceId(null);
 };
+const handleManualAttendance = async (
+  session: AdminAttendanceSession
+) => {
+  if (!supabase) return;
 
+  const participantId =
+    manualParticipantBySession[session.id];
+
+  if (!participantId) return;
+
+  setManualAttendanceSavingId(session.id);
+  setAttendanceAdminError('');
+
+  const { error } = await supabase
+    .from('attendance_records')
+    .upsert(
+      {
+        participant_id: participantId,
+        session_id: session.id
+      },
+      {
+        onConflict: 'participant_id,session_id',
+        ignoreDuplicates: true
+      }
+    );
+
+  if (error) {
+    setAttendanceAdminError(
+      lang === 'ar'
+        ? 'تعذر تسجيل حضور المشارك يدويًا.'
+        : 'Unable to record manual attendance.'
+    );
+  } else {
+    await loadAttendanceRecords();
+
+    setManualParticipantBySession((current) => ({
+      ...current,
+      [session.id]: ''
+    }));
+  }
+
+  setManualAttendanceSavingId(null);
+};
   const filteredRegistrations = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return registrations.filter((reg) => {
@@ -767,7 +858,18 @@ setSelectedReg((prev) =>
         {attendanceSessions.map((session) => {
           const isBusy =
             savingAttendanceId === session.id;
+const sessionRecords = attendanceRecords.filter(
+  (record) => record.session_id === session.id
+);
 
+const attendedParticipantIds = new Set(
+  sessionRecords.map((record) => record.participant_id)
+);
+
+const availableParticipants = participants.filter(
+  (participant) =>
+    !attendedParticipantIds.has(participant.id)
+);
           return (
             <div
               key={session.id}
@@ -909,7 +1011,128 @@ setSelectedReg((prev) =>
                     ? 'فتح الحضور'
                     : 'Open Attendance'}
                 </button>
+<div className="border-t border-[#DDD2BC] pt-5 space-y-4">
 
+  <div className="flex items-center justify-between gap-3">
+    <h3 className="font-bold text-[#3C4620]">
+      {lang === 'ar'
+        ? 'الحاضرون'
+        : 'Attendees'}
+    </h3>
+
+    <span className="px-3 py-1 rounded-full bg-[#4B5D16]/10 text-[#4B5D16] text-sm font-bold">
+      {sessionRecords.length}
+    </span>
+  </div>
+
+  {sessionRecords.length === 0 ? (
+    <p className="text-sm text-[#3C4620]/60">
+      {lang === 'ar'
+        ? 'لم يتم تسجيل حضور أي مشارك حتى الآن.'
+        : 'No attendance has been recorded yet.'}
+    </p>
+  ) : (
+    <div className="space-y-2 max-h-52 overflow-y-auto">
+      {sessionRecords.map((record) => {
+        const participant = participants.find(
+          (item) =>
+            item.id === record.participant_id
+        );
+
+        return (
+          <div
+            key={record.id}
+            className="flex items-center justify-between gap-3 p-3 rounded-md bg-[#ECE2CE]/50"
+          >
+            <div>
+              <p className="text-sm font-bold text-[#3C4620]">
+                {participant?.full_name ||
+                  (lang === 'ar'
+                    ? 'مشارك'
+                    : 'Participant')}
+              </p>
+
+              {participant && (
+                <p
+                  dir="ltr"
+                  className="text-xs text-[#3C4620]/60 text-start"
+                >
+                  {participant.university_id}
+                </p>
+              )}
+            </div>
+
+            <CheckCircle2 className="w-5 h-5 text-[#4B5D16] shrink-0" />
+          </div>
+        );
+      })}
+    </div>
+  )}
+
+  <div className="border-t border-[#DDD2BC] pt-4 space-y-3">
+
+    <p className="text-sm font-bold text-[#3C4620]">
+      {lang === 'ar'
+        ? 'تسجيل حضور يدوي'
+        : 'Manual Check-In'}
+    </p>
+
+    <select
+      value={
+        manualParticipantBySession[session.id] || ''
+      }
+      onChange={(e) =>
+        setManualParticipantBySession(
+          (current) => ({
+            ...current,
+            [session.id]: e.target.value
+          })
+        )
+      }
+      className="w-full px-3 py-2.5 rounded-md bg-[#F6F1E6] border border-[#DDD2BC] text-[#3C4620]"
+    >
+      <option value="">
+        {lang === 'ar'
+          ? 'اختر المشارك'
+          : 'Select participant'}
+      </option>
+
+      {availableParticipants.map(
+        (participant) => (
+          <option
+            key={participant.id}
+            value={participant.id}
+          >
+            {participant.full_name} —{' '}
+            {participant.university_id}
+          </option>
+        )
+      )}
+    </select>
+
+    <button
+      type="button"
+      disabled={
+        !manualParticipantBySession[session.id] ||
+        manualAttendanceSavingId === session.id
+      }
+      onClick={() =>
+        handleManualAttendance(session)
+      }
+      className="w-full px-4 py-2.5 rounded-md bg-[#3C4620] text-[#ECE2CE] font-bold hover:bg-[#4B5D16] disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {manualAttendanceSavingId === session.id
+        ? lang === 'ar'
+          ? 'جاري التسجيل...'
+          : 'Recording...'
+        : lang === 'ar'
+        ? 'تسجيل الحضور يدويًا'
+        : 'Record Attendance'}
+    </button>
+
+  </div>
+
+</div>
               </div>
             </div>
           );
