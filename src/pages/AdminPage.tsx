@@ -698,13 +698,27 @@ setSelectedReg((prev) =>
                           </span>
                         </td>
                         <td className="py-4 px-4 text-end">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenApplicant(reg)}
-                            className="px-4 py-1.5 text-sm font-bold rounded-md bg-[#ECE2CE] text-[#3C4620] hover:bg-[#3C4620] hover:text-[#ECE2CE] transition-colors cursor-pointer whitespace-nowrap"
-                          >
-                            {a.table.openDetails}
-                          </button>
+<button
+  type="button"
+  onClick={() => handleOpenApplicant(reg)}
+  className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+    reg.status === 'accepted'
+      ? 'bg-[#4B5D16] text-[#ECE2CE]'
+      : reg.status === 'rejected'
+      ? 'bg-[#E45C10]/10 text-[#E45C10] border border-[#E45C10]/40'
+      : 'bg-[#ECE2CE] text-[#3C4620] hover:bg-[#3C4620] hover:text-[#ECE2CE]'
+  }`}
+>
+  {reg.status === 'accepted'
+    ? lang === 'ar'
+      ? 'تم القبول'
+      : 'Accepted'
+    : reg.status === 'rejected'
+    ? lang === 'ar'
+      ? 'تم الرفض'
+      : 'Rejected'
+    : a.table.openDetails}
+</button>
                         </td>
                       </tr>
                     ))
@@ -1383,40 +1397,79 @@ const availableParticipants = participants.filter(
               </div>
             )}
 
-            {/* Decision Buttons */}
-            <div className="pt-4 border-t border-[#DDD2BC] flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  disabled={isReviewing}
-                  onClick={() => handleReviewDecision('accepted')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] hover:bg-[#3C4620] disabled:opacity-60 cursor-pointer"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>
-                    {isReviewing ? a.modal.processing : a.modal.acceptBtn}
-                  </span>
-                </button>
+{/* Decision Buttons */}
+<div className="pt-4 border-t border-[#DDD2BC] flex flex-wrap items-center justify-between gap-3">
+  <div className="flex flex-wrap items-center gap-3">
 
-                <button
-                  type="button"
-                  disabled={isReviewing || selectedReg.participant_account_created}
-                  onClick={() => handleReviewDecision('rejected')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-[#ECE2CE] disabled:opacity-40 cursor-pointer"
-                >
-                  <XCircle className="w-4 h-4" />
-                  <span>{a.modal.rejectBtn}</span>
-                </button>
-              </div>
+    {selectedReg.status === 'accepted' ||
+    selectedReg.participant_account_created ? (
+      <button
+        type="button"
+        disabled
+        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] cursor-default"
+      >
+        <CheckCircle2 className="w-4 h-4" />
+        <span>
+          {lang === 'ar'
+            ? 'تم القبول'
+            : 'Accepted'}
+        </span>
+      </button>
+    ) : selectedReg.status === 'rejected' ? (
+      <button
+        type="button"
+        disabled
+        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#E45C10] text-white cursor-default"
+      >
+        <XCircle className="w-4 h-4" />
+        <span>
+          {lang === 'ar'
+            ? 'تم الرفض'
+            : 'Rejected'}
+        </span>
+      </button>
+    ) : (
+      <>
+        <button
+          type="button"
+          disabled={isReviewing}
+          onClick={() =>
+            handleReviewDecision('accepted')
+          }
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] hover:bg-[#3C4620] disabled:opacity-60 cursor-pointer"
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          <span>
+            {isReviewing
+              ? a.modal.processing
+              : a.modal.acceptBtn}
+          </span>
+        </button>
 
-              <button
-                type="button"
-                onClick={() => setSelectedReg(null)}
-                className="px-4 py-2 text-sm font-bold text-[#3C4620] hover:underline cursor-pointer"
-              >
-                {a.modal.close}
-              </button>
-            </div>
+        <button
+          type="button"
+          disabled={isReviewing}
+          onClick={() =>
+            handleReviewDecision('rejected')
+          }
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-[#ECE2CE] disabled:opacity-40 cursor-pointer"
+        >
+          <XCircle className="w-4 h-4" />
+          <span>{a.modal.rejectBtn}</span>
+        </button>
+      </>
+    )}
+
+  </div>
+
+  <button
+    type="button"
+    onClick={() => setSelectedReg(null)}
+    className="px-4 py-2 text-sm font-bold text-[#3C4620] hover:underline cursor-pointer"
+  >
+    {a.modal.close}
+  </button>
+</div>
           </div>
         </div>
       )}
