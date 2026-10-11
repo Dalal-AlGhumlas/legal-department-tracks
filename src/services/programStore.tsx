@@ -60,6 +60,13 @@ reviewApplication: (
   decision: 'accepted' | 'rejected' | 'pending',
   assignedTrackId?: TrackSlug
 ) => Promise<ReviewApplicationResult>;
+generateParticipantCredentials: (
+  participantId: string
+) => Promise<{
+  email: string;
+  temporaryPassword: string;
+}>;
+  
   issueOrUploadCertificate: (
     participantId: string,
     file?: File | null
@@ -663,7 +670,50 @@ body: {
     },
     [currentUser, loadAdminRegistrations, loadParticipants]
   );
+const generateParticipantCredentials = useCallback(
+  async (
+    participantId: string
+  ): Promise<{
+    email: string;
+    temporaryPassword: string;
+  }> => {
+    if (
+      !currentUser ||
+      currentUser.role !== 'admin' ||
+      !isSupabaseConfigured ||
+      !supabase
+    ) {
+      throw new Error('FORBIDDEN');
+    }
 
+    const { data, error } = await supabase.functions.invoke(
+      'admin-actions',
+      {
+        body: {
+          action: 'generate_participant_credentials',
+          participantId
+        }
+      }
+    );
+
+    if (
+      error ||
+      data?.error ||
+      !data?.email ||
+      !data?.temporaryPassword
+    ) {
+      throw new Error(
+        data?.error || 'CREDENTIAL_GENERATION_FAILED'
+      );
+    }
+
+    return {
+      email: data.email,
+      temporaryPassword: data.temporaryPassword
+    };
+  },
+  [currentUser]
+);
   const issueOrUploadCertificate = useCallback(
     async (
       participantId: string,
@@ -884,6 +934,7 @@ const deleteCertificate = useCallback(
         requestPasswordReset,
         updateParticipantPassword,
         reviewApplication,
+        generateParticipantCredentials,
         issueOrUploadCertificate,
         getSignedCertificateUrl,
         deleteCertificate,
