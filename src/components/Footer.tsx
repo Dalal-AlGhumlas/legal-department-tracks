@@ -37,6 +37,17 @@ export const Footer: React.FC = () => {
               {t.footer.aboutClub}
             </p>
             <p className="text-sm font-bold text-[#F2B635] pt-1">{t.footer.slogan}</p>
+            <p className="text-sm text-[#ECE2CE]/80 pt-2" dir="ltr">
+  Designed &amp; Developed by{' '}
+  <a
+    href="https://www.linkedin.com/in/dalal-alghumlas/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
+  >
+    Dalal AlGhumlas
+  </a>
+</p>
           </div>
 
           {/* Column 2: Essential Navigation */}
@@ -100,18 +111,6 @@ export const Footer: React.FC = () => {
       {OFFICIAL_CONTACTS.partnershipsEmail}
     </a>
   </div>
-
-  <p className="text-sm text-[#ECE2CE]/80" dir="ltr">
-    Designed &amp; Developed by{' '}
-    <a
-      href="https://www.linkedin.com/in/dalal-alghumlas/"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
-    >
-      Dalal AlGhumlas
-    </a>
-  </p>
 </div>
 </div>
 
