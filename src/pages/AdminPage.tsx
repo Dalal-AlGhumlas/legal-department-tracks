@@ -47,6 +47,7 @@ const {
   registrationState,
   refreshAdminData,
   reviewApplication,
+  generateParticipantCredentials,
   issueOrUploadCertificate,
   deleteCertificate,
   getSignedCertificateUrl,
@@ -86,6 +87,15 @@ const [activeTab, setActiveTab] = useState<
   >(null);
   const [deletingCertificateId, setDeletingCertificateId] =
   useState<string | null>(null);
+  const [credentialsLoadingId, setCredentialsLoadingId] =
+  useState<string | null>(null);
+
+const [participantCredentials, setParticipantCredentials] = useState<{
+  participantId: string;
+  name: string;
+  email: string;
+  temporaryPassword: string;
+} | null>(null);
   const [previewCertUrl, setPreviewCertUrl] = useState<string | null>(null);
   const [previewCertIsPdf, setPreviewCertIsPdf] = useState<boolean>(false);
 
@@ -447,7 +457,68 @@ if (result.generatedCredentials) {
       setIsReviewing(false);
     }
   };
+const handleGenerateParticipantCredentials = async (
+  participantId: string,
+  participantName: string
+) => {
+  const confirmed = window.confirm(
+    lang === 'ar'
+      ? 'سيتم إنشاء كلمة مرور مؤقتة جديدة لهذا المشارك. إذا كان لديه كلمة مرور سابقة فلن تعمل بعد الآن. هل تريدين المتابعة؟'
+      : 'A new temporary password will be created for this participant. Any previous password will stop working. Continue?'
+  );
 
+  if (!confirmed) return;
+
+  setCredentialsLoadingId(participantId);
+
+  try {
+    const result = await generateParticipantCredentials(
+      participantId
+    );
+
+    setParticipantCredentials({
+      participantId,
+      name: participantName,
+      email: result.email,
+      temporaryPassword: result.temporaryPassword
+    });
+  } catch {
+    window.alert(
+      lang === 'ar'
+        ? 'تعذر إنشاء بيانات الدخول.'
+        : 'Unable to generate login credentials.'
+    );
+  } finally {
+    setCredentialsLoadingId(null);
+  }
+};
+
+const handleCopyCredentials = async () => {
+  if (!participantCredentials) return;
+
+  const text =
+    lang === 'ar'
+      ? `بيانات الدخول لبرنامج مسارات الإدارات القانونية
+
+البريد الإلكتروني: ${participantCredentials.email}
+كلمة المرور المؤقتة: ${participantCredentials.temporaryPassword}
+
+يمكنك تسجيل الدخول باستخدام البيانات أعلاه، ثم تغيير كلمة المرور بعد الدخول.`
+      : `Legal Department Tracks Login Details
+
+Email: ${participantCredentials.email}
+Temporary Password: ${participantCredentials.temporaryPassword}
+
+You can sign in using the details above and change your password after logging in.`;
+
+  await navigator.clipboard.writeText(text);
+
+  window.alert(
+    lang === 'ar'
+      ? 'تم نسخ بيانات الدخول.'
+      : 'Login details copied.'
+  );
+};
   const handleIssueDefaultCertificate = async (participantId: string) => {
     setUploadingParticipantId(participantId);
     try {
@@ -877,6 +948,29 @@ const handleDeleteCertificate = async (
                         </td>
                         <td className="py-4 px-4 text-end">
                           <div className="flex flex-wrap items-center justify-end gap-2">
+                            <button
+  type="button"
+  disabled={credentialsLoadingId === part.id}
+  onClick={() =>
+    handleGenerateParticipantCredentials(
+      part.id,
+      part.full_name
+    )
+  }
+  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-md border border-[#4B5D16] text-[#4B5D16] hover:bg-[#4B5D16] hover:text-[#ECE2CE] disabled:opacity-50 cursor-pointer"
+>
+  <KeyRound className="w-3.5 h-3.5" />
+
+  <span>
+    {credentialsLoadingId === part.id
+      ? lang === 'ar'
+        ? 'جاري الإنشاء...'
+        : 'Generating...'
+      : lang === 'ar'
+      ? 'إنشاء بيانات الدخول'
+      : 'Generate Login Details'}
+  </span>
+</button>
 {cert && (
   <>
     <button
@@ -1346,7 +1440,99 @@ const availableParticipants = participants.filter(
           </div>
         )}
       </div>
+{participantCredentials && (
+  <div
+    role="dialog"
+    aria-modal="true"
+    className="fixed inset-0 z-50 bg-[#3C4620]/70 flex items-center justify-center p-4"
+  >
+    <div className="bg-[#F6F1E6] border border-[#DDD2BC] rounded-xl max-w-lg w-full p-6 space-y-5">
 
+      <div className="flex items-center justify-between border-b border-[#DDD2BC] pb-3">
+        <div>
+          <h2 className="text-xl font-bold text-[#3C4620]">
+            {lang === 'ar'
+              ? 'بيانات دخول المشارك'
+              : 'Participant Login Details'}
+          </h2>
+
+          <p className="text-sm text-[#3C4620]/70 mt-1">
+            {participantCredentials.name}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setParticipantCredentials(null)}
+          className="p-1.5 rounded-md hover:bg-[#ECE2CE] text-[#3C4620] cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="p-4 rounded-lg bg-[#ECE2CE] border border-[#4B5D16] space-y-4">
+
+        <div>
+          <p className="text-xs text-[#3C4620]/60 mb-1">
+            {lang === 'ar'
+              ? 'البريد الإلكتروني'
+              : 'Email'}
+          </p>
+
+          <p
+            dir="ltr"
+            className="font-bold text-[#3C4620] text-start break-all"
+          >
+            {participantCredentials.email}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-[#3C4620]/60 mb-1">
+            {lang === 'ar'
+              ? 'كلمة المرور المؤقتة'
+              : 'Temporary Password'}
+          </p>
+
+          <p
+            dir="ltr"
+            className="font-mono font-bold text-lg text-[#3C4620] bg-[#FAF7F0] border border-[#DDD2BC] rounded-md px-3 py-2 text-start"
+          >
+            {participantCredentials.temporaryPassword}
+          </p>
+        </div>
+
+      </div>
+
+      <p className="text-sm text-[#3C4620]/70">
+        {lang === 'ar'
+          ? 'احتفظي بهذه البيانات أو انسخيها قبل إغلاق النافذة. كلمة المرور لن تظهر مرة أخرى.'
+          : 'Copy these details before closing. The temporary password will not be shown again.'}
+      </p>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={handleCopyCredentials}
+          className="flex-1 px-5 py-2.5 rounded-md bg-[#3C4620] text-[#ECE2CE] font-bold hover:bg-[#4B5D16] cursor-pointer"
+        >
+          {lang === 'ar'
+            ? 'نسخ بيانات الدخول'
+            : 'Copy Login Details'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setParticipantCredentials(null)}
+          className="px-5 py-2.5 rounded-md border border-[#3C4620] text-[#3C4620] font-bold hover:bg-[#ECE2CE] cursor-pointer"
+        >
+          {lang === 'ar' ? 'إغلاق' : 'Close'}
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
       {/* APPLICANT REVIEW MODAL */}
       {selectedReg && (
         <div
