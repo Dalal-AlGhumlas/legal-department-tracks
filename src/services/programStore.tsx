@@ -240,11 +240,12 @@ const { data, error } = await supabase
 
       setDataLoading(true);
       try {
-        const { data: profileRow, error: profileErr } = await supabase
-          .from('participants')
-          .select('*')
-          .eq('user_id', uid)
-          .maybeSingle();
+const { data: profileRow, error: profileErr } = await supabase
+  .from('participants')
+  .select('*')
+  .eq('user_id', uid)
+  .eq('is_active', true)
+  .maybeSingle();
 
         if (profileErr || !profileRow) {
           setMyParticipantProfile(null);
@@ -339,11 +340,12 @@ const { data, error } = await supabase
 
       if (hasParticipantRole) {
         // Verify that an active participant profile actually exists
-        const { data: partProfile, error: partErr } = await supabase
-          .from('participants')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
+const { data: partProfile, error: partErr } = await supabase
+  .from('participants')
+  .select('*')
+  .eq('user_id', userId)
+  .eq('is_active', true)
+  .maybeSingle();
 
         if (partErr || !partProfile) {
           return null;
