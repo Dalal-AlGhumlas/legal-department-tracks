@@ -482,16 +482,18 @@ const handleGenerateParticipantCredentials = async (
       email: result.email,
       temporaryPassword: result.temporaryPassword
     });
-  } catch {
-    window.alert(
-      lang === 'ar'
-        ? 'تعذر إنشاء بيانات الدخول.'
-        : 'Unable to generate login credentials.'
-    );
-  } finally {
-    setCredentialsLoadingId(null);
-  }
-};
+} catch (error) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : 'UNKNOWN_ERROR';
+
+  window.alert(
+    lang === 'ar'
+      ? `تعذر إنشاء بيانات الدخول.\n\nالخطأ: ${message}`
+      : `Unable to generate login credentials.\n\nError: ${message}`
+  );
+}
 
 const handleCopyCredentials = async () => {
   if (!participantCredentials) return;
