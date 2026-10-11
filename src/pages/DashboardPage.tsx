@@ -110,7 +110,6 @@ useEffect(() => {
   lang
 ]);
 
-if (authLoading || dataLoading) {
 
   if (authLoading || dataLoading) {
     return (
