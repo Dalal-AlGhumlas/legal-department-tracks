@@ -64,6 +64,7 @@ reviewApplication: (
     participantId: string,
     file?: File | null
   ) => Promise<CertificateRecord>;
+  deleteCertificate: (participantId: string) => Promise<void>;
   getSignedCertificateUrl: (participantId: string) => Promise<string | null>;
   updateRegistrationWindow: (openAtIso: string, closeAtIso: string) => Promise<void>;
   getMyParticipantProfile: () => ParticipantProfile | null;
@@ -728,7 +729,48 @@ body: {
     },
     [currentUser, participants, loadCertificates]
   );
+const deleteCertificate = useCallback(
+  async (participantId: string): Promise<void> => {
+    if (
+      !currentUser ||
+      currentUser.role !== 'admin' ||
+      !isSupabaseConfigured ||
+      !supabase
+    ) {
+      throw new Error('FORBIDDEN');
+    }
 
+    const cert = certificates[participantId];
+
+    if (!cert) {
+      throw new Error('CERTIFICATE_NOT_AVAILABLE');
+    }
+
+    const { error: dbError } = await supabase
+      .from('certificates')
+      .delete()
+      .eq('id', cert.id);
+
+    if (dbError) {
+      throw new Error('CERTIFICATE_DELETE_FAILED');
+    }
+
+    const { error: storageError } = await supabase.storage
+      .from('certificates')
+      .remove([cert.storage_path]);
+
+    if (storageError) {
+      console.error('Certificate file cleanup failed:', storageError);
+    }
+
+    await loadCertificates();
+  },
+  [
+    currentUser,
+    certificates,
+    loadCertificates
+  ]
+);
   const getSignedCertificateUrl = useCallback(
     async (participantId: string): Promise<string | null> => {
       if (!currentUser || !isSupabaseConfigured || !supabase) {
@@ -844,6 +886,7 @@ body: {
         reviewApplication,
         issueOrUploadCertificate,
         getSignedCertificateUrl,
+        deleteCertificate,
         updateRegistrationWindow,
         getMyParticipantProfile,
         getMyCertificate
