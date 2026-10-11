@@ -275,7 +275,6 @@ tracksMustDiffer: 'يجب أن تكون الرغبة الثانية مختلفة
       updatePasswordBtn: 'حفظ كلمة المرور الجديدة',
       passwordUpdatedMsg: 'تم تحديث كلمة المرور بنجاح.',
       passwordUpdateError: 'تعذر تحديث كلمة المرور. يرجى التأكد من أن كلمة المرور لا تقل عن ٨ أحرف.',
-      passwordUpdateError: 'تعذر تحديث كلمة المرور. يرجى التأكد من أن كلمة المرور لا تقل عن ٨ أحرف.',
 attendanceTitle: 'الحضور',
 attendanceSubtitle:
   'يتم تفعيل تسجيل الحضور خلال الفترة المحددة لكل يوم. عند تفعيل الحضور، اضغط على الزر وامسح رمز QR الموجود في القاعة.',
@@ -633,7 +632,6 @@ tracksMustDiffer: 'Your second preference must be different from your first pref
       newPasswordLabel: 'New Password',
       updatePasswordBtn: 'Save New Password',
       passwordUpdatedMsg: 'Your password has been updated successfully.',
-      passwordUpdateError: 'Unable to update password. Please ensure your new password is at least 8 characters.',
       passwordUpdateError: 'Unable to update password. Please ensure your new password is at least 8 characters.',
 attendanceTitle: 'Attendance',
 attendanceSubtitle:
