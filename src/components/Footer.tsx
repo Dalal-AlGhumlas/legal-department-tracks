@@ -99,17 +99,6 @@ export const Footer: React.FC = () => {
                 {OFFICIAL_CONTACTS.partnershipsEmail}
               </a>
             </div>
-            <p className="pt-3 text-xs text-[#ECE2CE]/60" dir="ltr">
-  Designed & Developed by{' '}
-  <a
-    href="https://www.linkedin.com/in/dalal-alghumlas/"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
-  >
-    Dalal AlGhumlas
-  </a>
-</p>
           </div>
         </div>
 
