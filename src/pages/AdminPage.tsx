@@ -74,6 +74,8 @@ const [activeTab, setActiveTab] = useState<
     email: string;
     temporaryPassword: string;
   } | null>(null);
+  const [selectedAcceptanceTrack, setSelectedAcceptanceTrack] =
+  useState<TrackSlug | null>(null);
 
   // Certificates state
   const [uploadingParticipantId, setUploadingParticipantId] = useState<
@@ -382,6 +384,7 @@ const handleManualAttendance = async (
 
 const handleOpenApplicant = (reg: RegistrationRecord) => {
   setSelectedReg(reg);
+  setSelectedAcceptanceTrack(reg.selected_track_id);
   setGeneratedCreds(null);
   setModalError('');
 };
@@ -393,7 +396,10 @@ const handleOpenApplicant = (reg: RegistrationRecord) => {
     try {
 const result = await reviewApplication(
   selectedReg.id,
-  decision
+  decision,
+  decision === 'accepted'
+    ? selectedAcceptanceTrack || selectedReg.selected_track_id
+    : undefined
 );
 
 setSelectedReg((prev) =>
@@ -1373,7 +1379,53 @@ const availableParticipants = participants.filter(
     </p>
   </div>
 </div>
+{selectedReg.status === 'pending' && (
+  <div className="p-4 rounded-md border border-[#4B5D16]/30 bg-[#FAF7F0] space-y-3">
+    <p className="text-sm font-bold text-[#3C4620]">
+      {lang === 'ar'
+        ? 'اختيار المسار عند القبول'
+        : 'Select Track for Acceptance'}
+    </p>
 
+    <select
+      value={selectedAcceptanceTrack || ''}
+      onChange={(e) =>
+        setSelectedAcceptanceTrack(
+          e.target.value as TrackSlug
+        )
+      }
+      className="w-full px-4 py-2.5 rounded-md bg-[#F6F1E6] border border-[#DDD2BC] text-[#3C4620] font-bold"
+    >
+      <option value={selectedReg.selected_track_id}>
+        {lang === 'ar'
+          ? `الرغبة الأولى — ${getTrackLabel(
+              selectedReg.selected_track_id
+            )}`
+          : `First Preference — ${getTrackLabel(
+              selectedReg.selected_track_id
+            )}`}
+      </option>
+
+      {selectedReg.second_track_id && (
+        <option value={selectedReg.second_track_id}>
+          {lang === 'ar'
+            ? `الرغبة الثانية — ${getTrackLabel(
+                selectedReg.second_track_id
+              )}`
+            : `Second Preference — ${getTrackLabel(
+                selectedReg.second_track_id
+              )}`}
+        </option>
+      )}
+    </select>
+
+    <p className="text-xs text-[#3C4620]/60">
+      {lang === 'ar'
+        ? 'يمكن اختيار إحدى الرغبتين فقط.'
+        : 'Only one of the applicant’s two preferences can be selected.'}
+    </p>
+  </div>
+)}
             </div>
 
             {/* One-Time Generated Participant Credentials Display */}
