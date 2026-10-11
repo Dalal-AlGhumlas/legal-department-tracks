@@ -1,12 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Eye, Download, LogOut, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  Eye,
+  Download,
+  LogOut,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  ScanLine
+} from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useProgramStore } from '../services/programStore';
 import { TRACKS_BY_SLUG } from '../config/tracks';
 import { OFFICIAL_PROGRAM_SCHEDULE } from '../config/program';
 import { TrackImage } from '../components/TrackImage';
 import { supabase } from '../integrations/supabase/client';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface AttendanceStatus {
   session_id: string;
@@ -42,7 +51,34 @@ export const DashboardPage: React.FC = () => {
   const [attendance, setAttendance] = useState<AttendanceStatus[]>([]);
 const [attendanceLoading, setAttendanceLoading] = useState(false);
 const [attendanceError, setAttendanceError] = useState('');
+const [scannerOpen, setScannerOpen] = useState(false);
+const [scanning, setScanning] = useState(false);
+const [checkInMessage, setCheckInMessage] = useState('');
+const [checkInError, setCheckInError] = useState(''); 
+const scannerRef = useRef<Html5Qrcode | null>(null);
+  
+  const loadAttendanceStatus = async () => {
+  if (!supabase) return;
 
+  setAttendanceLoading(true);
+
+  const { data, error } = await supabase.rpc(
+    'get_my_attendance_status'
+  );
+
+  if (error) {
+    setAttendanceError(
+      lang === 'ar'
+        ? 'تعذر تحميل حالة الحضور.'
+        : 'Unable to load attendance status.'
+    );
+  } else {
+    setAttendance((data || []) as AttendanceStatus[]);
+    setAttendanceError('');
+  }
+
+  setAttendanceLoading(false);
+};
 useEffect(() => {
   if (!authLoading && currentUser?.role === 'participant') {
     loadParticipantProfile(currentUser.id).catch(() => {
@@ -66,41 +102,13 @@ useEffect(() => {
     return;
   }
 
-  let cancelled = false;
-
-  const loadAttendance = async () => {
-    setAttendanceLoading(true);
-
-    const { data, error } = await supabase.rpc(
-      'get_my_attendance_status'
-    );
-
-    if (cancelled) {
-      return;
-    }
-
-    if (error) {
-      setAttendanceError(
-        lang === 'ar'
-          ? 'تعذر تحميل حالة الحضور.'
-          : 'Unable to load attendance status.'
-      );
-    } else {
-      setAttendance((data || []) as AttendanceStatus[]);
-      setAttendanceError('');
-    }
-
-    setAttendanceLoading(false);
-  };
-
-  loadAttendance();
+  loadAttendanceStatus();
 
   const timer = window.setInterval(() => {
-    loadAttendance();
+    loadAttendanceStatus();
   }, 30000);
 
   return () => {
-    cancelled = true;
     window.clearInterval(timer);
   };
 }, [
@@ -109,7 +117,6 @@ useEffect(() => {
   currentUser?.role,
   lang
 ]);
-
 
   if (authLoading || dataLoading) {
     return (
@@ -218,7 +225,182 @@ const getAttendanceState = (session: AttendanceStatus) => {
 
   return 'open';
 };
-  const d = t.dashboardPage;
+
+const stopScanner = async () => {
+  const scanner = scannerRef.current;
+
+  if (!scanner) return;
+
+  try {
+    if (scanner.isScanning) {
+      await scanner.stop();
+    }
+  } catch {
+    // Ignore scanner stop errors
+  }
+
+  try {
+    await scanner.clear();
+  } catch {
+    // Ignore scanner cleanup errors
+  }
+
+  scannerRef.current = null;
+};
+
+const closeScanner = async () => {
+  await stopScanner();
+
+  setScannerOpen(false);
+  setScanning(false);
+  setCheckInError('');
+  setCheckInMessage('');
+};
+
+const handleCheckInToken = async (token: string) => {
+  if (!supabase) return;
+
+  setScanning(true);
+  setCheckInError('');
+  setCheckInMessage('');
+
+  const cleanToken = token.trim();
+
+  const { data, error } = await supabase.rpc(
+    'check_in_attendance',
+    {
+      p_qr_token: cleanToken
+    }
+  );
+
+  if (error) {
+    const message = error.message || '';
+
+    if (message.includes('INVALID_QR')) {
+      setCheckInError(
+        lang === 'ar'
+          ? 'رمز QR غير صحيح.'
+          : 'Invalid QR code.'
+      );
+    } else if (
+      message.includes('ATTENDANCE_NOT_OPEN_YET')
+    ) {
+      setCheckInError(
+        lang === 'ar'
+          ? 'لم يبدأ وقت تسجيل الحضور بعد.'
+          : 'Attendance has not started yet.'
+      );
+    } else if (message.includes('ATTENDANCE_CLOSED')) {
+      setCheckInError(
+        lang === 'ar'
+          ? 'تم إغلاق تسجيل الحضور.'
+          : 'Attendance is closed.'
+      );
+    } else {
+      setCheckInError(
+        lang === 'ar'
+          ? 'تعذر تسجيل الحضور. حاول مرة أخرى.'
+          : 'Unable to record attendance. Please try again.'
+      );
+    }
+
+    setScanning(false);
+    return;
+  }
+
+  const result = data as {
+    success?: boolean;
+    already_checked_in?: boolean;
+  };
+
+  if (result?.success) {
+    setCheckInMessage(
+      result.already_checked_in
+        ? lang === 'ar'
+          ? 'حضورك مسجل مسبقًا لهذا اليوم.'
+          : 'Your attendance was already recorded for today.'
+        : lang === 'ar'
+          ? 'تم تسجيل حضورك بنجاح.'
+          : 'Your attendance has been recorded successfully.'
+    );
+
+    await loadAttendanceStatus();
+
+    window.setTimeout(() => {
+      setScannerOpen(false);
+      setCheckInMessage('');
+    }, 1800);
+  }
+
+  setScanning(false);
+};
+
+const openScanner = () => {
+  setScannerOpen(true);
+  setCheckInError('');
+  setCheckInMessage('');
+
+  window.setTimeout(async () => {
+    try {
+      const scanner = new Html5Qrcode(
+        'attendance-qr-reader'
+      );
+
+      scannerRef.current = scanner;
+
+      const cameras = await Html5Qrcode.getCameras();
+
+      if (!cameras.length) {
+        setCheckInError(
+          lang === 'ar'
+            ? 'لم يتم العثور على كاميرا في الجهاز.'
+            : 'No camera was found on this device.'
+        );
+        return;
+      }
+
+      const backCamera =
+        cameras.find((camera) =>
+          /back|rear|environment/i.test(camera.label)
+        ) || cameras[cameras.length - 1];
+
+      let qrHandled = false;
+
+      await scanner.start(
+        backCamera.id,
+        {
+          fps: 10,
+          qrbox: {
+            width: 240,
+            height: 240
+          }
+        },
+        async (decodedText) => {
+          if (qrHandled) return;
+
+          qrHandled = true;
+
+          await stopScanner();
+
+          await handleCheckInToken(decodedText);
+        },
+        () => {
+          // Keep scanning until a QR code is found
+        }
+      );
+    } catch {
+      setCheckInError(
+        lang === 'ar'
+          ? 'تعذر تشغيل الكاميرا. تأكد من السماح للموقع باستخدام الكاميرا.'
+          : 'Unable to start the camera. Please allow camera access.'
+      );
+
+      await stopScanner();
+    }
+  }, 150);
+};
+
+const d = t.dashboardPage;
   const isPdfCertificate = certificate?.file_name
     ?.toLowerCase()
     .endsWith('.pdf');
@@ -494,14 +676,16 @@ const getAttendanceState = (session: AttendanceStatus) => {
               </p>
             )}
 
-            {state === 'open' && (
-              <button
-                type="button"
-                className="w-full px-5 py-3 rounded-md bg-[#3C4620] text-[#ECE2CE] font-bold hover:bg-[#4B5D16] transition-colors cursor-pointer btn-press"
-              >
-                {d.attendanceButton}
-              </button>
-            )}
+{state === 'open' && (
+  <button
+    type="button"
+    onClick={openScanner}
+    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-[#3C4620] text-[#ECE2CE] font-bold hover:bg-[#4B5D16] transition-colors cursor-pointer btn-press"
+  >
+    <ScanLine className="w-5 h-5" />
+    <span>{d.attendanceButton}</span>
+  </button>
+)}
           </div>
         );
       })}
@@ -566,7 +750,78 @@ const getAttendanceState = (session: AttendanceStatus) => {
           </dl>
         </section>
       </div>
+{/* Attendance QR Scanner Modal */}
+{scannerOpen && (
+  <div
+    role="dialog"
+    aria-modal="true"
+    className="fixed inset-0 z-50 bg-[#3C4620]/80 flex items-center justify-center p-4"
+  >
+    <div className="w-full max-w-md rounded-xl bg-[#F6F1E6] border border-[#DDD2BC] p-5 space-y-5">
 
+      <div className="flex items-start justify-between gap-4 border-b border-[#DDD2BC] pb-3">
+        <div className="space-y-1">
+          <h3 className="text-xl font-bold text-[#3C4620]">
+            {lang === 'ar'
+              ? 'تسجيل الحضور'
+              : 'Attendance Check-In'}
+          </h3>
+
+          <p className="text-sm text-[#3C4620]/70">
+            {lang === 'ar'
+              ? 'وجّه الكاميرا نحو رمز QR المعروض في القاعة.'
+              : 'Point your camera at the QR code displayed in the hall.'}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={closeScanner}
+          className="p-2 rounded-md hover:bg-[#ECE2CE] text-[#3C4620] cursor-pointer shrink-0"
+          aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {!checkInMessage && (
+        <div
+          id="attendance-qr-reader"
+          className="w-full overflow-hidden rounded-lg bg-black min-h-[280px]"
+        />
+      )}
+
+      {scanning && (
+        <p className="text-center text-sm font-bold text-[#4B5D16]">
+          {lang === 'ar'
+            ? 'جاري تسجيل حضورك...'
+            : 'Recording your attendance...'}
+        </p>
+      )}
+
+      {checkInMessage && (
+        <div className="flex items-center gap-3 p-4 rounded-md bg-[#4B5D16]/10 border border-[#4B5D16]/30">
+          <CheckCircle2 className="w-6 h-6 text-[#4B5D16] shrink-0" />
+
+          <p className="font-bold text-[#3C4620]">
+            {checkInMessage}
+          </p>
+        </div>
+      )}
+
+      {checkInError && (
+        <div className="flex items-center gap-3 p-4 rounded-md bg-[#E45C10]/10 border border-[#E45C10]/30">
+          <AlertCircle className="w-6 h-6 text-[#E45C10] shrink-0" />
+
+          <p className="font-bold text-[#3C4620]">
+            {checkInError}
+          </p>
+        </div>
+      )}
+
+    </div>
+  </div>
+)}
       {/* Private Certificate Preview Modal */}
       {previewUrl && (
         <div
