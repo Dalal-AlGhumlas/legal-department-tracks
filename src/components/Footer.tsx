@@ -81,26 +81,39 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: Official Contact Details (Refined editorial typography, no table) */}
-          <div className="md:col-span-4 space-y-4">
-            <h3 className="text-lg font-bold text-[#ECE2CE]">
-              {t.footer.contactTitle}
-            </h3>
+ {/* Column 3: Official Contact Details */}
+<div className="md:col-span-4 space-y-4">
+  <h3 className="text-lg font-bold text-[#ECE2CE]">
+    {t.footer.contactTitle}
+  </h3>
 
-            <div className="space-y-1">
-              <p className="text-sm text-[#ECE2CE]/70">
-                {t.footer.partnershipsEmailLabel}
-              </p>
-              <a
-                href={`mailto:${OFFICIAL_CONTACTS.partnershipsEmail}`}
-                dir="ltr"
-                className="inline-block text-base font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
-              >
-                {OFFICIAL_CONTACTS.partnershipsEmail}
-              </a>
-            </div>
-          </div>
-        </div>
+  <div className="space-y-1">
+    <p className="text-sm text-[#ECE2CE]/70">
+      {t.footer.partnershipsEmailLabel}
+    </p>
+
+    <a
+      href={`mailto:${OFFICIAL_CONTACTS.partnershipsEmail}`}
+      dir="ltr"
+      className="inline-block text-base font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
+    >
+      {OFFICIAL_CONTACTS.partnershipsEmail}
+    </a>
+  </div>
+
+  <p className="text-xs text-[#ECE2CE]/60" dir="ltr">
+    Designed &amp; Developed by{' '}
+    <a
+      href="https://www.linkedin.com/in/dalal-alghumlas/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-bold text-[#ECE2CE] hover:text-[#F2B635] transition-colors"
+    >
+      Dalal AlGhumlas
+    </a>
+  </p>
+</div>
+</div>
 
 {/* Bottom bar */}
 <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#ECE2CE]/70">
