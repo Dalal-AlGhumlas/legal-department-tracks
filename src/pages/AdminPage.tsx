@@ -389,7 +389,9 @@ const handleOpenApplicant = (reg: RegistrationRecord) => {
   setModalError('');
 };
 
-  const handleReviewDecision = async (decision: 'accepted' | 'rejected') => {
+const handleReviewDecision = async (
+  decision: 'accepted' | 'rejected' | 'pending'
+) => {
     if (!selectedReg || isReviewing) return;
     setIsReviewing(true);
     setModalError('');
@@ -415,9 +417,11 @@ setSelectedReg((prev) =>
     : null
 );
 
-      if (result.generatedCredentials) {
-        setGeneratedCreds(result.generatedCredentials);
-      }
+if (result.generatedCredentials) {
+  setGeneratedCreds(result.generatedCredentials);
+} else {
+  setGeneratedCreds(null);
+}
     } catch {
       setModalError(t.adminPage.modal.actionError);
     } finally {
@@ -1448,46 +1452,91 @@ const availableParticipants = participants.filter(
                 </div>
               </div>
             )}
-
 {/* Decision Buttons */}
 <div className="pt-4 border-t border-[#DDD2BC] flex flex-wrap items-center justify-between gap-3">
   <div className="flex flex-wrap items-center gap-3">
 
-    {selectedReg.status === 'accepted' ||
-    selectedReg.participant_account_created ? (
-      <button
-        type="button"
-        disabled
-        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] cursor-default"
-      >
-        <CheckCircle2 className="w-4 h-4" />
-        <span>
-          {lang === 'ar'
-            ? 'تم القبول'
-            : 'Accepted'}
-        </span>
-      </button>
-    ) : selectedReg.status === 'rejected' ? (
-      <button
-        type="button"
-        disabled
-        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#E45C10] text-white cursor-default"
-      >
-        <XCircle className="w-4 h-4" />
-        <span>
-          {lang === 'ar'
-            ? 'تم الرفض'
-            : 'Rejected'}
-        </span>
-      </button>
-    ) : (
+    {/* ACCEPTED */}
+    {selectedReg.status === 'accepted' && (
+      <>
+        <button
+          type="button"
+          disabled
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] cursor-default"
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          <span>
+            {lang === 'ar' ? 'تم القبول' : 'Accepted'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={isReviewing}
+          onClick={() => handleReviewDecision('pending')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#3C4620] text-[#3C4620] hover:bg-[#3C4620] hover:text-[#ECE2CE] disabled:opacity-50 cursor-pointer"
+        >
+          <span>
+            {isReviewing
+              ? a.modal.processing
+              : lang === 'ar'
+              ? 'إرجاع إلى تحت المراجعة'
+              : 'Return to Review'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={isReviewing}
+          onClick={() => handleReviewDecision('rejected')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-white disabled:opacity-50 cursor-pointer"
+        >
+          <XCircle className="w-4 h-4" />
+          <span>
+            {lang === 'ar' ? 'رفض الطلب' : 'Reject'}
+          </span>
+        </button>
+      </>
+    )}
+
+    {/* REJECTED */}
+    {selectedReg.status === 'rejected' && (
+      <>
+        <button
+          type="button"
+          disabled
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#E45C10] text-white cursor-default"
+        >
+          <XCircle className="w-4 h-4" />
+          <span>
+            {lang === 'ar' ? 'تم الرفض' : 'Rejected'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={isReviewing}
+          onClick={() => handleReviewDecision('pending')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#3C4620] text-[#3C4620] hover:bg-[#3C4620] hover:text-[#ECE2CE] disabled:opacity-50 cursor-pointer"
+        >
+          <span>
+            {isReviewing
+              ? a.modal.processing
+              : lang === 'ar'
+              ? 'إرجاع إلى تحت المراجعة'
+              : 'Return to Review'}
+          </span>
+        </button>
+      </>
+    )}
+
+    {/* PENDING */}
+    {selectedReg.status === 'pending' && (
       <>
         <button
           type="button"
           disabled={isReviewing}
-          onClick={() =>
-            handleReviewDecision('accepted')
-          }
+          onClick={() => handleReviewDecision('accepted')}
           className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md bg-[#4B5D16] text-[#ECE2CE] hover:bg-[#3C4620] disabled:opacity-60 cursor-pointer"
         >
           <CheckCircle2 className="w-4 h-4" />
@@ -1501,9 +1550,7 @@ const availableParticipants = participants.filter(
         <button
           type="button"
           disabled={isReviewing}
-          onClick={() =>
-            handleReviewDecision('rejected')
-          }
+          onClick={() => handleReviewDecision('rejected')}
           className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-[#ECE2CE] disabled:opacity-40 cursor-pointer"
         >
           <XCircle className="w-4 h-4" />
@@ -1522,6 +1569,7 @@ const availableParticipants = participants.filter(
     {a.modal.close}
   </button>
 </div>
+
           </div>
         </div>
       )}
