@@ -126,7 +126,6 @@ export const HomePage: React.FC = () => {
           key={partner.nameEn}
           className="group overflow-hidden rounded-2xl border border-[#DDD2BC] bg-white transition-transform duration-300 hover:-translate-y-1"
         >
-
           <div className="h-52 flex items-center justify-center p-8 bg-white border-b border-[#DDD2BC]">
             <img
               src={partner.image}
