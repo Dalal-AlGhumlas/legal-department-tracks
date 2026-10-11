@@ -63,6 +63,8 @@ const [activeTab, setActiveTab] = useState<
     'all'
   );
   const [trackFilter, setTrackFilter] = useState<TrackSlug | 'all'>('all');
+  const [participantTrackFilter, setParticipantTrackFilter] =
+  useState<TrackSlug | 'all'>('all');
 
   // Applicant Modal State
   const [selectedReg, setSelectedReg] = useState<RegistrationRecord | null>(
@@ -370,7 +372,16 @@ if (
       );
     });
   }, [registrations, searchQuery, statusFilter, trackFilter]);
+const filteredParticipants = useMemo(() => {
+  if (participantTrackFilter === 'all') {
+    return participants;
+  }
 
+  return participants.filter(
+    (participant) =>
+      participant.selected_track_id === participantTrackFilter
+  );
+}, [participants, participantTrackFilter]);
   if (authLoading) {
     return (
       <div className="py-24 text-center text-lg font-bold text-[#3C4620]">
@@ -745,8 +756,39 @@ if (result.generatedCredentials) {
         )}
 
         {/* TAB 2: ACCEPTED PARTICIPANTS & CERTIFICATES */}
-        {!dataLoading && activeTab === 'participants' && (
-          <div className="bg-[#FAF7F0] border border-[#DDD2BC] rounded-lg overflow-x-auto">
+{!dataLoading && activeTab === 'participants' && (
+  <div className="space-y-4">
+
+    <div className="flex justify-end">
+      <select
+        value={participantTrackFilter}
+        onChange={(e) =>
+          setParticipantTrackFilter(
+            e.target.value as TrackSlug | 'all'
+          )
+        }
+        className="w-full sm:w-64 px-4 py-2.5 rounded-md bg-[#FAF7F0] border border-[#DDD2BC] text-[#3C4620] font-bold"
+      >
+        <option value="all">
+          {lang === 'ar'
+            ? 'جميع المسارات'
+            : 'All Tracks'}
+        </option>
+
+        {TRACKS.map((track) => (
+          <option
+            key={track.slug}
+            value={track.slug}
+          >
+            {lang === 'ar'
+              ? track.nameAr
+              : track.nameEn}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="bg-[#FAF7F0] border border-[#DDD2BC] rounded-lg overflow-x-auto">
             <table className="w-full text-start border-collapse">
               <thead>
                 <tr className="border-b border-[#DDD2BC] bg-[#ECE2CE]/60 text-sm font-bold text-[#3C4620]">
@@ -759,7 +801,7 @@ if (result.generatedCredentials) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DDD2BC] text-base">
-                {participants.length === 0 ? (
+                {filteredParticipants.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -769,7 +811,7 @@ if (result.generatedCredentials) {
                     </td>
                   </tr>
                 ) : (
-                  participants.map((part) => {
+                 filteredParticipants.map((part) => {
                     const cert = certificates[part.id];
                     const isBusy = uploadingParticipantId === part.id;
                     return (
@@ -851,7 +893,9 @@ if (result.generatedCredentials) {
               </tbody>
             </table>
           </div>
-        )}
+
+        </div>
+      )}
 {/* ATTENDANCE MANAGEMENT */}
 {!dataLoading && activeTab === 'attendance' && (
   <div className="space-y-6">
