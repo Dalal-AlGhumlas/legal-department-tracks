@@ -101,7 +101,7 @@ export const Footer: React.FC = () => {
     </a>
   </div>
 
-  <p className="text-xs text-[#ECE2CE]/70" dir="ltr">
+  <p className="text-xs text-[#ECE2CE]/80" dir="ltr">
     Designed &amp; Developed by{' '}
     <a
       href="https://www.linkedin.com/in/dalal-alghumlas/"
