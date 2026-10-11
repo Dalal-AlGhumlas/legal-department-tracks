@@ -126,14 +126,18 @@ export const HomePage: React.FC = () => {
           key={partner.nameEn}
           className="group overflow-hidden rounded-2xl border border-[#DDD2BC] bg-white transition-transform duration-300 hover:-translate-y-1"
         >
-          <div className="h-52 flex items-center justify-center p-8 bg-white border-b border-[#DDD2BC]">
-            <img
-              src={partner.image}
-              alt={lang === 'ar' ? partner.nameAr : partner.nameEn}
-              className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-              loading="lazy"
-            />
-          </div>
+<div className="h-52 flex items-center justify-center p-6 bg-white border-b border-[#DDD2BC]">
+  <img
+    src={partner.image}
+    alt={lang === 'ar' ? partner.nameAr : partner.nameEn}
+    className={`object-contain transition-transform duration-300 group-hover:scale-[1.03] ${
+      partner.image.includes('site.png')
+        ? 'w-80 sm:w-96 md:w-[28rem] max-h-full'
+        : 'max-w-full max-h-full'
+    }`}
+    loading="lazy"
+  />
+</div>
 
           <div className="p-6 space-y-4">
 
