@@ -6,6 +6,18 @@ import { useProgramStore } from '../services/programStore';
 import { TRACKS_BY_SLUG } from '../config/tracks';
 import { OFFICIAL_PROGRAM_SCHEDULE } from '../config/program';
 import { TrackImage } from '../components/TrackImage';
+import { supabase } from '../integrations/supabase/client';
+
+interface AttendanceStatus {
+  session_id: string;
+  day_number: number;
+  session_date: string;
+  opens_at: string;
+  closes_at: string;
+  is_active: boolean;
+  attended: boolean;
+  checked_in_at: string | null;
+}
 
 export const DashboardPage: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -27,14 +39,78 @@ export const DashboardPage: React.FC = () => {
   const [passwordSaved, setPasswordSaved] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [isUpdatingPass, setIsUpdatingPass] = useState(false);
+  const [attendance, setAttendance] = useState<AttendanceStatus[]>([]);
+const [attendanceLoading, setAttendanceLoading] = useState(false);
+const [attendanceError, setAttendanceError] = useState('');
 
-  useEffect(() => {
-    if (!authLoading && currentUser?.role === 'participant') {
-      loadParticipantProfile(currentUser.id).catch(() => {
-        // Handled by null profile state
-      });
+useEffect(() => {
+  if (!authLoading && currentUser?.role === 'participant') {
+    loadParticipantProfile(currentUser.id).catch(() => {
+      // Handled by null profile state
+    });
+  }
+}, [
+  authLoading,
+  currentUser?.id,
+  currentUser?.role,
+  loadParticipantProfile
+]);
+
+useEffect(() => {
+  if (
+    authLoading ||
+    !currentUser ||
+    currentUser.role !== 'participant' ||
+    !supabase
+  ) {
+    return;
+  }
+
+  let cancelled = false;
+
+  const loadAttendance = async () => {
+    setAttendanceLoading(true);
+
+    const { data, error } = await supabase.rpc(
+      'get_my_attendance_status'
+    );
+
+    if (cancelled) {
+      return;
     }
-  }, [authLoading, currentUser?.id, currentUser?.role, loadParticipantProfile]);
+
+    if (error) {
+      setAttendanceError(
+        lang === 'ar'
+          ? 'تعذر تحميل حالة الحضور.'
+          : 'Unable to load attendance status.'
+      );
+    } else {
+      setAttendance((data || []) as AttendanceStatus[]);
+      setAttendanceError('');
+    }
+
+    setAttendanceLoading(false);
+  };
+
+  loadAttendance();
+
+  const timer = window.setInterval(() => {
+    loadAttendance();
+  }, 30000);
+
+  return () => {
+    cancelled = true;
+    window.clearInterval(timer);
+  };
+}, [
+  authLoading,
+  currentUser?.id,
+  currentUser?.role,
+  lang
+]);
+
+if (authLoading || dataLoading) {
 
   if (authLoading || dataLoading) {
     return (
@@ -124,7 +200,25 @@ export const DashboardPage: React.FC = () => {
       setIsUpdatingPass(false);
     }
   };
+const getAttendanceState = (session: AttendanceStatus) => {
+  if (session.attended) {
+    return 'attended';
+  }
 
+  const now = new Date();
+  const opensAt = new Date(session.opens_at);
+  const closesAt = new Date(session.closes_at);
+
+  if (now < opensAt) {
+    return 'before';
+  }
+
+  if (now > closesAt || !session.is_active) {
+    return 'closed';
+  }
+
+  return 'open';
+};
   const d = t.dashboardPage;
   const isPdfCertificate = certificate?.file_name
     ?.toLowerCase()
@@ -329,7 +423,92 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
         </section>
+{/* Attendance */}
+<section className="space-y-6">
+  <div className="space-y-2 border-b border-[#DDD2BC] pb-3">
+    <h2 className="text-2xl font-bold text-[#3C4620]">
+      {d.attendanceTitle}
+    </h2>
 
+    <p className="text-sm text-[#3C4620]/75">
+      {d.attendanceSubtitle}
+    </p>
+  </div>
+
+  {attendanceLoading && attendance.length === 0 ? (
+    <p className="text-sm font-bold text-[#4B5D16]">
+      {t.common.loading}
+    </p>
+  ) : attendanceError ? (
+    <div className="p-4 rounded-md border border-[#E45C10]/40 bg-[#E45C10]/5">
+      <p className="text-sm font-bold text-[#E45C10]">
+        {attendanceError}
+      </p>
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {attendance.map((session) => {
+        const state = getAttendanceState(session);
+
+        const dateLabel = new Intl.DateTimeFormat(
+          lang === 'ar' ? 'ar-SA' : 'en-US',
+          {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }
+        ).format(new Date(`${session.session_date}T12:00:00`));
+
+        return (
+          <div
+            key={session.session_id}
+            className="p-5 rounded-lg bg-[#FAF7F0] border border-[#DDD2BC] space-y-4"
+          >
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-[#E45C10]">
+                {lang === 'ar'
+                  ? `اليوم ${session.day_number}`
+                  : `Day ${session.day_number}`}
+              </p>
+
+              <p className="text-lg font-bold text-[#3C4620]">
+                {dateLabel}
+              </p>
+            </div>
+
+            {state === 'attended' && (
+              <div className="flex items-center gap-2 text-[#4B5D16] font-bold">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>{d.attendanceRecorded}</span>
+              </div>
+            )}
+
+            {state === 'before' && (
+              <p className="text-sm text-[#3C4620]/70">
+                {d.attendanceNotStarted}
+              </p>
+            )}
+
+            {state === 'closed' && (
+              <p className="text-sm text-[#3C4620]/70">
+                {d.attendanceClosed}
+              </p>
+            )}
+
+            {state === 'open' && (
+              <button
+                type="button"
+                className="w-full px-5 py-3 rounded-md bg-[#3C4620] text-[#ECE2CE] font-bold hover:bg-[#4B5D16] transition-colors cursor-pointer btn-press"
+              >
+                {d.attendanceButton}
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )}
+</section>
         {/* Participant Personal Information */}
         <section className="space-y-6">
           <h2 className="text-2xl font-bold text-[#3C4620] border-b border-[#DDD2BC] pb-3">
