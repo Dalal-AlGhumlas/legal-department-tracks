@@ -35,22 +35,23 @@ interface AdminAttendanceRecord {
 }
 export const AdminPage: React.FC = () => {
   const { lang, t } = useLanguage();
-  const {
-    currentUser,
-    authLoading,
-    dataLoading,
-    signOut,
-    registrations,
-    participants,
-    certificates,
-    settings,
-    registrationState,
-    refreshAdminData,
-    reviewApplication,
-    issueOrUploadCertificate,
-    getSignedCertificateUrl,
-    updateRegistrationWindow
-  } = useProgramStore();
+const {
+  currentUser,
+  authLoading,
+  dataLoading,
+  signOut,
+  registrations,
+  participants,
+  certificates,
+  settings,
+  registrationState,
+  refreshAdminData,
+  reviewApplication,
+  issueOrUploadCertificate,
+  deleteCertificate,
+  getSignedCertificateUrl,
+  updateRegistrationWindow
+} = useProgramStore();
   const navigate = useNavigate();
 
 const [activeTab, setActiveTab] = useState<
@@ -83,6 +84,8 @@ const [activeTab, setActiveTab] = useState<
   const [uploadingParticipantId, setUploadingParticipantId] = useState<
     string | null
   >(null);
+  const [deletingCertificateId, setDeletingCertificateId] =
+  useState<string | null>(null);
   const [previewCertUrl, setPreviewCertUrl] = useState<string | null>(null);
   const [previewCertIsPdf, setPreviewCertIsPdf] = useState<boolean>(false);
 
@@ -487,7 +490,31 @@ if (result.generatedCredentials) {
       // Ignore preview failure
     }
   };
+const handleDeleteCertificate = async (
+  participantId: string
+) => {
+  const confirmed = window.confirm(
+    lang === 'ar'
+      ? 'هل أنت متأكد من حذف الشهادة؟ سيعود بإمكانك إصدار شهادة جديدة لهذا المشارك.'
+      : 'Are you sure you want to delete this certificate? You can issue a new certificate afterward.'
+  );
 
+  if (!confirmed) return;
+
+  setDeletingCertificateId(participantId);
+
+  try {
+    await deleteCertificate(participantId);
+  } catch {
+    window.alert(
+      lang === 'ar'
+        ? 'تعذر حذف الشهادة.'
+        : 'Unable to delete the certificate.'
+    );
+  } finally {
+    setDeletingCertificateId(null);
+  }
+};
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSettingsError('');
@@ -843,16 +870,37 @@ if (result.generatedCredentials) {
                         </td>
                         <td className="py-4 px-4 text-end">
                           <div className="flex flex-wrap items-center justify-end gap-2">
-                            {cert && (
-                              <button
-                                type="button"
-                                onClick={() => handlePreviewCert(part.id)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md border border-[#3C4620]/30 text-[#3C4620] hover:border-[#3C4620] cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>{a.participants.viewCertBtn}</span>
-                              </button>
-                            )}
+{cert && (
+  <>
+    <button
+      type="button"
+      onClick={() => handlePreviewCert(part.id)}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md border border-[#3C4620]/30 text-[#3C4620] hover:border-[#3C4620] cursor-pointer"
+    >
+      <Eye className="w-3.5 h-3.5" />
+      <span>{a.participants.viewCertBtn}</span>
+    </button>
+
+    <button
+      type="button"
+      disabled={deletingCertificateId === part.id}
+      onClick={() => handleDeleteCertificate(part.id)}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-md border border-[#E45C10] text-[#E45C10] hover:bg-[#E45C10] hover:text-white disabled:opacity-50 cursor-pointer"
+    >
+      <XCircle className="w-3.5 h-3.5" />
+
+      <span>
+        {deletingCertificateId === part.id
+          ? lang === 'ar'
+            ? 'جاري الحذف...'
+            : 'Deleting...'
+          : lang === 'ar'
+          ? 'حذف الشهادة'
+          : 'Delete Certificate'}
+      </span>
+    </button>
+  </>
+)}
 
                             <button
                               type="button"
