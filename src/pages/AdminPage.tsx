@@ -15,6 +15,18 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { useProgramStore } from '../services/programStore';
 import { TRACKS, TRACKS_BY_SLUG } from '../config/tracks';
 import { ApplicationStatus, RegistrationRecord, TrackSlug } from '../types';
+import QRCode from 'react-qr-code';
+import { supabase } from '../integrations/supabase/client';
+
+interface AdminAttendanceSession {
+  id: string;
+  day_number: number;
+  session_date: string;
+  opens_at: string;
+  closes_at: string;
+  is_active: boolean;
+  qr_token: string;
+}
 
 export const AdminPage: React.FC = () => {
   const { lang, t } = useLanguage();
@@ -36,9 +48,9 @@ export const AdminPage: React.FC = () => {
   } = useProgramStore();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<
-    'registrations' | 'participants' | 'settings'
-  >('registrations');
+const [activeTab, setActiveTab] = useState<
+  'registrations' | 'participants' | 'attendance' | 'settings'
+>('registrations');
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,11 +86,23 @@ export const AdminPage: React.FC = () => {
   );
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsError, setSettingsError] = useState('');
+  const [attendanceSessions, setAttendanceSessions] = useState<
+  AdminAttendanceSession[]
+>([]);
+const [attendanceAdminLoading, setAttendanceAdminLoading] =
+  useState(false);
+const [attendanceAdminError, setAttendanceAdminError] =
+  useState('');
+const [savingAttendanceId, setSavingAttendanceId] =
+  useState<string | null>(null);
+  
 
   useEffect(() => {
     setOpenAtInput(settings.registration_open_at.slice(0, 16));
     setCloseAtInput(settings.registration_close_at.slice(0, 16));
   }, [settings.registration_open_at, settings.registration_close_at]);
+
+  
 
   useEffect(() => {
     if (!authLoading && currentUser?.role === 'admin') {
@@ -87,6 +111,151 @@ export const AdminPage: React.FC = () => {
       });
     }
   }, [authLoading, currentUser?.id, currentUser?.role, refreshAdminData]);
+
+  const loadAttendanceSessions = async () => {
+  if (!supabase) return;
+
+  setAttendanceAdminLoading(true);
+  setAttendanceAdminError('');
+
+  const { data, error } = await supabase
+    .from('attendance_sessions')
+    .select(
+      'id, day_number, session_date, opens_at, closes_at, is_active, qr_token'
+    )
+    .order('day_number');
+
+  if (error) {
+    setAttendanceAdminError(
+      lang === 'ar'
+        ? 'تعذر تحميل جلسات الحضور.'
+        : 'Unable to load attendance sessions.'
+    );
+  } else {
+    setAttendanceSessions(
+      (data || []) as AdminAttendanceSession[]
+    );
+  }
+
+  setAttendanceAdminLoading(false);
+};
+
+useEffect(() => {
+  if (!authLoading && currentUser?.role === 'admin') {
+    loadAttendanceSessions();
+  }
+}, [authLoading, currentUser?.id, currentUser?.role]);
+
+const toDateTimeLocal = (iso: string) => {
+  const date = new Date(iso);
+  const offset = date.getTimezoneOffset();
+
+  return new Date(date.getTime() - offset * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+};
+
+const handleAttendanceTimeChange = (
+  sessionId: string,
+  field: 'opens_at' | 'closes_at',
+  value: string
+) => {
+  setAttendanceSessions((current) =>
+    current.map((session) =>
+      session.id === sessionId
+        ? {
+            ...session,
+            [field]: new Date(value).toISOString()
+          }
+        : session
+    )
+  );
+};
+
+const handleSaveAttendanceSession = async (
+  session: AdminAttendanceSession
+) => {
+  if (!supabase) return;
+
+  setSavingAttendanceId(session.id);
+  setAttendanceAdminError('');
+
+  const { error } = await supabase
+    .from('attendance_sessions')
+    .update({
+      opens_at: session.opens_at,
+      closes_at: session.closes_at
+    })
+    .eq('id', session.id);
+
+  if (error) {
+    setAttendanceAdminError(
+      lang === 'ar'
+        ? 'تعذر حفظ وقت الحضور.'
+        : 'Unable to save attendance time.'
+    );
+  } else {
+    await loadAttendanceSessions();
+  }
+
+  setSavingAttendanceId(null);
+};
+
+const handleToggleAttendance = async (
+  session: AdminAttendanceSession
+) => {
+  if (!supabase) return;
+
+  setSavingAttendanceId(session.id);
+  setAttendanceAdminError('');
+
+  const { error } = await supabase
+    .from('attendance_sessions')
+    .update({
+      is_active: !session.is_active
+    })
+    .eq('id', session.id);
+
+  if (error) {
+    setAttendanceAdminError(
+      lang === 'ar'
+        ? 'تعذر تغيير حالة الحضور.'
+        : 'Unable to change attendance status.'
+    );
+  } else {
+    await loadAttendanceSessions();
+  }
+
+  setSavingAttendanceId(null);
+};
+
+const handleRegenerateAttendanceQr = async (
+  session: AdminAttendanceSession
+) => {
+  if (!supabase) return;
+
+  setSavingAttendanceId(session.id);
+  setAttendanceAdminError('');
+
+  const { error } = await supabase
+    .from('attendance_sessions')
+    .update({
+      qr_token: crypto.randomUUID()
+    })
+    .eq('id', session.id);
+
+  if (error) {
+    setAttendanceAdminError(
+      lang === 'ar'
+        ? 'تعذر إنشاء رمز QR جديد.'
+        : 'Unable to generate a new QR code.'
+    );
+  } else {
+    await loadAttendanceSessions();
+  }
+
+  setSavingAttendanceId(null);
+};
 
   const filteredRegistrations = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -266,17 +435,24 @@ setSelectedReg((prev) =>
         <div className="flex flex-wrap items-center gap-2 border-b border-[#DDD2BC] pb-4">
           {(
             [
-              {
-                id: 'registrations',
-                label: a.tabs.registrations,
-                count: registrations.length
-              },
-              {
-                id: 'participants',
-                label: a.tabs.participants,
-                count: participants.length
-              },
-              { id: 'settings', label: a.tabs.settings }
+{
+  id: 'registrations',
+  label: a.tabs.registrations,
+  count: registrations.length
+},
+{
+  id: 'participants',
+  label: a.tabs.participants,
+  count: participants.length
+},
+{
+  id: 'attendance',
+  label: lang === 'ar' ? 'الحضور' : 'Attendance'
+},
+{
+  id: 'settings',
+  label: a.tabs.settings
+}
             ] as const
           ).map((tab) => {
             const isActive = activeTab === tab.id;
@@ -556,7 +732,192 @@ setSelectedReg((prev) =>
             </table>
           </div>
         )}
+{/* ATTENDANCE MANAGEMENT */}
+{!dataLoading && activeTab === 'attendance' && (
+  <div className="space-y-6">
 
+    <div className="space-y-1">
+      <h2 className="text-2xl font-bold text-[#3C4620]">
+        {lang === 'ar'
+          ? 'إدارة الحضور'
+          : 'Attendance Management'}
+      </h2>
+
+      <p className="text-sm text-[#3C4620]/70">
+        {lang === 'ar'
+          ? 'يمكنك تحديد وقت الحضور وفتحه أو إغلاقه وعرض رمز QR لكل يوم.'
+          : 'Set attendance times, open or close check-in, and display the QR code for each day.'}
+      </p>
+    </div>
+
+    {attendanceAdminError && (
+      <div className="p-4 rounded-md bg-[#E45C10]/10 border border-[#E45C10]/30">
+        <p className="font-bold text-[#E45C10]">
+          {attendanceAdminError}
+        </p>
+      </div>
+    )}
+
+    {attendanceAdminLoading ? (
+      <p className="font-bold text-[#3C4620]">
+        {t.common.loading}
+      </p>
+    ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {attendanceSessions.map((session) => {
+          const isBusy =
+            savingAttendanceId === session.id;
+
+          return (
+            <div
+              key={session.id}
+              className="bg-[#FAF7F0] border border-[#DDD2BC] rounded-xl p-5 space-y-5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-[#E45C10]">
+                    {lang === 'ar'
+                      ? `اليوم ${session.day_number}`
+                      : `Day ${session.day_number}`}
+                  </p>
+
+                  <p className="font-bold text-[#3C4620]">
+                    {session.session_date}
+                  </p>
+                </div>
+
+                <span
+                  className={`text-sm font-bold px-3 py-1 rounded-full ${
+                    session.is_active
+                      ? 'bg-[#4B5D16]/10 text-[#4B5D16]'
+                      : 'bg-[#DDD2BC] text-[#3C4620]/70'
+                  }`}
+                >
+                  {session.is_active
+                    ? lang === 'ar'
+                      ? 'مفتوح'
+                      : 'Open'
+                    : lang === 'ar'
+                    ? 'مغلق'
+                    : 'Closed'}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-[#3C4620]">
+                  {lang === 'ar'
+                    ? 'وقت فتح الحضور'
+                    : 'Check-in opens'}
+                </label>
+
+                <input
+                  type="datetime-local"
+                  dir="ltr"
+                  value={toDateTimeLocal(session.opens_at)}
+                  onChange={(e) =>
+                    handleAttendanceTimeChange(
+                      session.id,
+                      'opens_at',
+                      e.target.value
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-md border border-[#DDD2BC] bg-[#F6F1E6]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-[#3C4620]">
+                  {lang === 'ar'
+                    ? 'وقت إغلاق الحضور'
+                    : 'Check-in closes'}
+                </label>
+
+                <input
+                  type="datetime-local"
+                  dir="ltr"
+                  value={toDateTimeLocal(session.closes_at)}
+                  onChange={(e) =>
+                    handleAttendanceTimeChange(
+                      session.id,
+                      'closes_at',
+                      e.target.value
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-md border border-[#DDD2BC] bg-[#F6F1E6]"
+                />
+              </div>
+
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() =>
+                  handleSaveAttendanceSession(session)
+                }
+                className="w-full px-4 py-2 rounded-md border border-[#3C4620]/30 text-[#3C4620] font-bold hover:border-[#3C4620] disabled:opacity-50"
+              >
+                {lang === 'ar'
+                  ? 'حفظ الوقت'
+                  : 'Save Time'}
+              </button>
+
+              <div className="border-t border-[#DDD2BC] pt-5 space-y-4">
+                <div className="bg-white p-4 rounded-lg flex justify-center">
+                  <QRCode
+                    value={session.qr_token}
+                    size={180}
+                    bgColor="#FFFFFF"
+                    fgColor="#3C4620"
+                  />
+                </div>
+
+                <p className="text-xs text-center text-[#3C4620]/65">
+                  {lang === 'ar'
+                    ? 'اعرض هذا الرمز للمشاركين داخل القاعة.'
+                    : 'Display this code to participants in the hall.'}
+                </p>
+
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() =>
+                    handleRegenerateAttendanceQr(session)
+                  }
+                  className="w-full px-4 py-2 rounded-md bg-[#ECE2CE] text-[#3C4620] font-bold hover:bg-[#DDD2BC] disabled:opacity-50"
+                >
+                  {lang === 'ar'
+                    ? 'إنشاء QR جديد'
+                    : 'Generate New QR'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() =>
+                    handleToggleAttendance(session)
+                  }
+                  className={`w-full px-4 py-3 rounded-md font-bold disabled:opacity-50 ${
+                    session.is_active
+                      ? 'bg-[#E45C10] text-white'
+                      : 'bg-[#4B5D16] text-[#ECE2CE]'
+                  }`}
+                >
+                  {session.is_active
+                    ? lang === 'ar'
+                      ? 'إغلاق الحضور'
+                      : 'Close Attendance'
+                    : lang === 'ar'
+                    ? 'فتح الحضور'
+                    : 'Open Attendance'}
+                </button>
+
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
         {/* TAB 3: REGISTRATION WINDOW SETTINGS */}
         {!dataLoading && activeTab === 'settings' && (
           <div className="max-w-xl bg-[#FAF7F0] border border-[#DDD2BC] rounded-lg p-6 space-y-6">
