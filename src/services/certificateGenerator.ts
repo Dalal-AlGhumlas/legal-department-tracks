@@ -1,83 +1,165 @@
-import { ParticipantProfile } from '../types';
-import { TRACKS_BY_SLUG } from '../config/tracks';
+import { ParticipantProfile, TrackSlug } from '../types';
 
-/**
- * Generates an official Masar SVG certificate document string
- * so it can be converted into a Blob/File and uploaded to the private Supabase `certificates` bucket.
- */
-export function buildOfficialCertificateSvgString(
-  participant: ParticipantProfile,
-  issuedDateIso: string
-): string {
-  const track = TRACKS_BY_SLUG[participant.selected_track_id];
-  const trackNameAr = track ? track.nameAr : participant.selected_track_id;
-  const formattedDate = new Date(issuedDateIso).toLocaleDateString('ar-SA', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+const CERTIFICATE_TEMPLATES: Record<TrackSlug, string> = {
+  litigation: '/certificates/litigation.png',
+  contracts: '/certificates/contracts.png',
+  legislation: '/certificates/legislation.png',
+  'governance-compliance':
+    '/certificates/governance-compliance.png'
+};
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve(image);
+    image.onerror = () =>
+      reject(new Error('CERTIFICATE_TEMPLATE_LOAD_FAILED'));
+
+    image.src = src;
   });
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" direction="rtl">
-    <defs>
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&amp;display=swap');
-        .ar-title { font-family: 'Amiri', serif; font-weight: 700; fill: #3C4620; }
-        .ar-body { font-family: 'Amiri', serif; font-weight: 400; fill: #3C4620; }
-        .ar-accent { font-family: 'Amiri', serif; font-weight: 700; fill: #4B5D16; }
-      </style>
-    </defs>
-    <rect width="1200" height="850" fill="#F6F1E6" />
-    <rect x="36" y="36" width="1128" height="778" fill="none" stroke="#3C4620" stroke-width="2" />
-    <rect x="48" y="48" width="1104" height="754" fill="none" stroke="#DDD2BC" stroke-width="1" />
-
-    <!-- Top Masar 4-Path Emblem -->
-    <g transform="translate(540, 85)">
-      <path d="M44 18 L56 25 L56 54 L26 76 L6 76 L44 50 Z" fill="#DFB86B" />
-      <path d="M60 15 L72 22 L72 54 L50 76 L32 76 L60 51 Z" fill="#F2B635" />
-      <path d="M76 12 L88 19 L88 54 L76 76 L56 76 L76 52 Z" fill="#E45C10" />
-      <path d="M92 9 L104 16 L104 54 L114 76 L82 76 L92 53 Z" fill="#3C4620" />
-    </g>
-
-    <text x="600" y="205" text-anchor="middle" font-size="22" class="ar-body">نادي القانون — جامعة الملك سعود</text>
-    <text x="600" y="265" text-anchor="middle" font-size="44" class="ar-title">شهادة إتمام حضور البرنامج التدريبي</text>
-    <text x="600" y="315" text-anchor="middle" font-size="28" class="ar-accent">مسارات الإدارات القانونية ٢٠٢٦ م</text>
-
-    <line x1="420" y1="345" x2="780" y2="345" stroke="#DDD2BC" stroke-width="1.5" />
-
-    <text x="600" y="405" text-anchor="middle" font-size="24" class="ar-body">يشهد نادي القانون بجامعة الملك سعود بأن المشارك / المشاركة:</text>
-    <text x="600" y="470" text-anchor="middle" font-size="42" class="ar-title">${escapeXml(participant.full_name)}</text>
-
-    <text x="600" y="535" text-anchor="middle" font-size="24" class="ar-body">قد أتم حضور وملازمة المسار التدريبي التخصصي:</text>
-    <text x="600" y="590" text-anchor="middle" font-size="34" class="ar-accent">مسار ${escapeXml(trackNameAr)}</text>
-
-    <text x="600" y="645" text-anchor="middle" font-size="21" class="ar-body">ضمن برنامج مسارات الإدارات القانونية المنعقد خلال الفترة من ١٢ إلى ١٤ أكتوبر ٢٠٢٦ م</text>
-
-    <line x1="180" y1="705" x2="1020" y2="705" stroke="#DDD2BC" stroke-width="1" />
-
-    <text x="950" y="750" text-anchor="middle" font-size="18" class="ar-body">تاريخ الإصدار: ${escapeXml(formattedDate)}</text>
-    <text x="600" y="750" text-anchor="middle" font-size="18" class="ar-title">نادي القانون — كلية الحقوق والعلوم السياسية</text>
-    <text x="250" y="750" text-anchor="middle" font-size="16" class="ar-body">الرقم الجامعي: ${escapeXml(participant.university_id)}</text>
-  </svg>`;
 }
 
-/**
- * Converts the generated SVG into a File object suitable for uploading to the private `certificates` bucket.
- */
-export function buildOfficialCertificateFile(
+function canvasToBlob(
+  canvas: HTMLCanvasElement
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(
+            new Error('CERTIFICATE_GENERATION_FAILED')
+          );
+        }
+      },
+      'image/png',
+      1
+    );
+  });
+}
+
+function getNameFontSize(
+  ctx: CanvasRenderingContext2D,
+  name: string
+): number {
+  let fontSize = 78;
+
+  while (fontSize >= 48) {
+    ctx.font = `700 ${fontSize}px "Amiri", serif`;
+
+    if (ctx.measureText(name).width <= 1050) {
+      return fontSize;
+    }
+
+    fontSize -= 2;
+  }
+
+  return 48;
+}
+
+export async function buildOfficialCertificateFile(
   participant: ParticipantProfile,
-  issuedDateIso: string
-): File {
-  const svgContent = buildOfficialCertificateSvgString(participant, issuedDateIso);
-  const safeFileName = `certificate-${participant.selected_track_id}-${participant.university_id}.svg`;
-  const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-  return new File([blob], safeFileName, { type: 'image/svg+xml' });
-}
+  _issuedDateIso: string
+): Promise<File> {
+  const templatePath =
+    CERTIFICATE_TEMPLATES[
+      participant.selected_track_id
+    ];
 
-function escapeXml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+  if (!templatePath) {
+    throw new Error(
+      'CERTIFICATE_TEMPLATE_NOT_FOUND'
+    );
+  }
+
+  const response = await fetch(templatePath);
+
+  if (!response.ok) {
+    throw new Error(
+      'CERTIFICATE_TEMPLATE_LOAD_FAILED'
+    );
+  }
+
+  const templateBlob = await response.blob();
+  const templateUrl =
+    URL.createObjectURL(templateBlob);
+
+  try {
+    const image = await loadImage(templateUrl);
+
+    const canvas =
+      document.createElement('canvas');
+
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error(
+        'CERTIFICATE_GENERATION_FAILED'
+      );
+    }
+
+    ctx.drawImage(
+      image,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    // يغطي عبارة "اسم المشارك" الموجودة في القالب
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(
+      560,
+      520,
+      880,
+      145
+    );
+
+    // التأكد من تحميل خط Amiri قبل كتابة الاسم
+    if (document.fonts?.load) {
+      await document.fonts.load(
+        '700 78px "Amiri"'
+      );
+    }
+
+    const fontSize = getNameFontSize(
+      ctx,
+      participant.full_name
+    );
+
+    ctx.font =
+      `700 ${fontSize}px "Amiri", serif`;
+
+    ctx.fillStyle = '#3C4620';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.direction = 'rtl';
+
+    ctx.fillText(
+      participant.full_name,
+      canvas.width / 2,
+      595
+    );
+
+    const certificateBlob =
+      await canvasToBlob(canvas);
+
+    const safeFileName =
+      `certificate-${participant.selected_track_id}-${participant.university_id}.png`;
+
+    return new File(
+      [certificateBlob],
+      safeFileName,
+      {
+        type: 'image/png'
+      }
+    );
+  } finally {
+    URL.revokeObjectURL(templateUrl);
+  }
 }
