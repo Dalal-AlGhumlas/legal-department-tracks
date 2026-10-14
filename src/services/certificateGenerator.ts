@@ -111,14 +111,6 @@ export async function buildOfficialCertificateFile(
       canvas.height
     );
 
-    // يغطي عبارة "اسم المشارك" الموجودة في القالب
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(
-      560,
-      520,
-      880,
-      145
-    );
 
     // التأكد من تحميل خط Amiri قبل كتابة الاسم
     if (document.fonts?.load) {
