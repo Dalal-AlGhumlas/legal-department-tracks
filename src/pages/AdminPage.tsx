@@ -524,16 +524,27 @@ You can sign in using the details above and change your password after logging i
       : 'Login details copied.'
   );
 };
-  const handleIssueDefaultCertificate = async (participantId: string) => {
-    setUploadingParticipantId(participantId);
-    try {
-      await issueOrUploadCertificate(participantId, null);
-    } catch {
-      // Handled silently
-    } finally {
-      setUploadingParticipantId(null);
-    }
-  };
+const handleIssueDefaultCertificate = async (participantId: string) => {
+  setUploadingParticipantId(participantId);
+
+  try {
+    await issueOrUploadCertificate(participantId, null);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'UNKNOWN_ERROR';
+
+    window.alert(
+      lang === 'ar'
+        ? `تعذر إصدار الشهادة.\n\nالخطأ: ${message}`
+        : `Unable to issue certificate.\n\nError: ${message}`
+    );
+  } finally {
+    setUploadingParticipantId(null);
+  }
+};
+
 
   const handleFileUploadCertificate = async (
     participantId: string,
