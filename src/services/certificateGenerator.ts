@@ -115,7 +115,7 @@ export async function buildOfficialCertificateFile(
     // التأكد من تحميل خط Amiri قبل كتابة الاسم
     if (document.fonts?.load) {
       await document.fonts.load(
-        '700 78px "Amiri"'
+        '700 78px "IBM Plex Sans Arabic"'
       );
     }
 
