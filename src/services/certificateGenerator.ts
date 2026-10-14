@@ -1,11 +1,11 @@
 import { ParticipantProfile, TrackSlug } from '../types';
 
 const CERTIFICATE_TEMPLATES: Record<TrackSlug, string> = {
-  litigation: '/certificates/litigation.png',
-  contracts: '/certificates/contracts.png',
-  legislation: '/certificates/legislation.png',
+  litigation: '/images/certificates/litigation.png',
+  contracts: '/images/certificates/contracts.png',
+  legislation: '/images/certificates/legislation.png',
   'governance-compliance':
-    '/certificates/governance-compliance.png'
+    '/images/certificates/governance-compliance.png'
 };
 
 function loadImage(src: string): Promise<HTMLImageElement> {
