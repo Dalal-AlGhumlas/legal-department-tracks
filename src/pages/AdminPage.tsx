@@ -555,9 +555,18 @@ const handleIssueDefaultCertificate = async (participantId: string) => {
     setUploadingParticipantId(participantId);
     try {
       await issueOrUploadCertificate(participantId, file);
-    } catch {
-      // Handled silently
-    } finally {
+} catch (error) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : 'UNKNOWN_ERROR';
+
+  window.alert(
+    lang === 'ar'
+      ? `تعذر رفع الشهادة.\n\nالخطأ: ${message}`
+      : `Unable to upload certificate.\n\nError: ${message}`
+  );
+} finally {
       setUploadingParticipantId(null);
       e.target.value = '';
     }
