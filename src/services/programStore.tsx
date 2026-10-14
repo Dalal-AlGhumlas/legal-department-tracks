@@ -734,11 +734,15 @@ const generateParticipantCredentials = useCallback(
       }
 
       const issuedAt = new Date().toISOString();
-      const uploadFile: File =
-        file || buildOfficialCertificateFile(participant, issuedAt);
+const uploadFile: File =
+  file ||
+  (await buildOfficialCertificateFile(
+    participant,
+    issuedAt
+  ));
 
       const ext =
-        uploadFile.name.split('.').pop()?.toLowerCase() || 'svg';
+        uploadFile.name.split('.').pop()?.toLowerCase() || 'png';
       const storagePath = `${participant.user_id}/certificate-${participant.selected_track_id}-${Date.now()}.${ext}`;
 
       const { error: uploadErr } = await supabase.storage
