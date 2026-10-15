@@ -85,6 +85,8 @@ const [activeTab, setActiveTab] = useState<
   const [uploadingParticipantId, setUploadingParticipantId] = useState<
     string | null
   >(null);
+  const [bulkIssuingCertificates, setBulkIssuingCertificates] =
+  useState(false);
   const [deletingCertificateId, setDeletingCertificateId] =
   useState<string | null>(null);
   const [credentialsLoadingId, setCredentialsLoadingId] =
@@ -552,7 +554,97 @@ const handleIssueDefaultCertificate = async (participantId: string) => {
     setUploadingParticipantId(null);
   }
 };
+const handleIssueCertificatesForFullAttendance = async () => {
+  const requiredSessions = attendanceSessions
+    .filter((session) =>
+      [1, 2, 3].includes(session.day_number)
+    )
+    .map((session) => session.id);
 
+  if (requiredSessions.length !== 3) {
+    window.alert(
+      lang === 'ar'
+        ? 'تعذر العثور على جلسات الأيام الثلاثة.'
+        : 'The three attendance sessions could not be found.'
+    );
+    return;
+  }
+
+  const eligibleParticipants = participants.filter(
+    (participant) => {
+      const attendedSessions = new Set(
+        attendanceRecords
+          .filter(
+            (record) =>
+              record.participant_id === participant.id
+          )
+          .map((record) => record.session_id)
+      );
+
+      return requiredSessions.every((sessionId) =>
+        attendedSessions.has(sessionId)
+      );
+    }
+  );
+
+  const participantsWithoutCertificate =
+    eligibleParticipants.filter(
+      (participant) => !certificates[participant.id]
+    );
+
+  if (participantsWithoutCertificate.length === 0) {
+    window.alert(
+      lang === 'ar'
+        ? 'لا توجد شهادات جديدة للإصدار. جميع الحاضرين للأيام الثلاثة لديهم شهادات بالفعل.'
+        : 'There are no new certificates to issue.'
+    );
+    return;
+  }
+
+  const confirmed = window.confirm(
+    lang === 'ar'
+      ? `سيتم إصدار ${participantsWithoutCertificate.length} شهادة للمشاركين الذين حضروا الأيام الثلاثة كاملة. هل تريدين المتابعة؟`
+      : `${participantsWithoutCertificate.length} certificates will be issued. Continue?`
+  );
+
+  if (!confirmed) return;
+
+  setBulkIssuingCertificates(true);
+
+  let successCount = 0;
+  let failedCount = 0;
+
+  try {
+    for (const participant of participantsWithoutCertificate) {
+      try {
+        await issueOrUploadCertificate(
+          participant.id,
+          null
+        );
+
+        successCount += 1;
+      } catch {
+        failedCount += 1;
+      }
+    }
+
+    window.alert(
+      lang === 'ar'
+        ? `تم الانتهاء.\n\nتم إصدار ${successCount} شهادة بنجاح.${
+            failedCount > 0
+              ? `\nتعذر إصدار ${failedCount} شهادة.`
+              : ''
+          }`
+        : `Completed.\n\n${successCount} certificates issued successfully.${
+            failedCount > 0
+              ? `\n${failedCount} certificates failed.`
+              : ''
+          }`
+    );
+  } finally {
+    setBulkIssuingCertificates(false);
+  }
+};
 
   const handleFileUploadCertificate = async (
     participantId: string,
@@ -890,7 +982,21 @@ const handleDeleteCertificate = async (
 {!dataLoading && activeTab === 'participants' && (
   <div className="space-y-4">
 
-    <div className="flex justify-end">
+    <div className="flex flex-col sm:flex-row justify-between gap-3">
+  <button
+    type="button"
+    onClick={handleIssueCertificatesForFullAttendance}
+    disabled={bulkIssuingCertificates}
+    className="px-5 py-2.5 rounded-md bg-[#4B5D16] text-[#ECE2CE] font-bold hover:bg-[#3C4620] disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    {bulkIssuingCertificates
+      ? lang === 'ar'
+        ? 'جاري إصدار الشهادات...'
+        : 'Issuing certificates...'
+      : lang === 'ar'
+      ? 'إصدار شهادات الحضور الكامل'
+      : 'Issue Certificates for Full Attendance'}
+  </button>
       <select
         value={participantTrackFilter}
         onChange={(e) =>
