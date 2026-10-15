@@ -732,7 +732,23 @@ const generateParticipantCredentials = useCallback(
       if (!participant) {
         throw new Error('CERTIFICATE_NOT_AVAILABLE');
       }
+const { data: attendanceRows, error: attendanceError } =
+  await supabase
+    .from('attendance_records')
+    .select('session_id')
+    .eq('participant_id', participantId);
 
+if (attendanceError) {
+  throw new Error('ATTENDANCE_CHECK_FAILED');
+}
+
+const attendedSessions = new Set(
+  (attendanceRows || []).map((row) => row.session_id)
+);
+
+if (attendedSessions.size < 3) {
+  throw new Error('ATTENDANCE_INCOMPLETE');
+}
       const issuedAt = new Date().toISOString();
 const uploadFile: File =
   file ||
