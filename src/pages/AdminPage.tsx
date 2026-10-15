@@ -1080,12 +1080,6 @@ const handleDeleteCertificate = async (
           ? 'إدارة الحضور'
           : 'Attendance Management'}
       </h2>
-
-      <p className="text-sm text-[#3C4620]/70">
-        {lang === 'ar'
-          ? 'يمكنك تحديد وقت الحضور وفتحه أو إغلاقه وعرض رمز QR لكل يوم.'
-          : 'Set attendance times, open or close check-in, and display the QR code for each day.'}
-      </p>
     </div>
 
     {attendanceAdminError && (
