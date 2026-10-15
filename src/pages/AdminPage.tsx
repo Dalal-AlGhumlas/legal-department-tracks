@@ -535,11 +535,19 @@ const handleIssueDefaultCertificate = async (participantId: string) => {
         ? error.message
         : 'UNKNOWN_ERROR';
 
-    window.alert(
-      lang === 'ar'
-        ? `تعذر إصدار الشهادة.\n\nالخطأ: ${message}`
-        : `Unable to issue certificate.\n\nError: ${message}`
-    );
+    if (message === 'ATTENDANCE_INCOMPLETE') {
+      window.alert(
+        lang === 'ar'
+          ? 'لا يمكن إصدار الشهادة لأن حضور المشارك ناقص. يجب حضور الأيام الثلاثة كاملة.'
+          : 'The certificate cannot be issued because the participant has incomplete attendance. All three days are required.'
+      );
+    } else {
+      window.alert(
+        lang === 'ar'
+          ? `تعذر إصدار الشهادة.\n\nالخطأ: ${message}`
+          : `Unable to issue certificate.\n\nError: ${message}`
+      );
+    }
   } finally {
     setUploadingParticipantId(null);
   }
